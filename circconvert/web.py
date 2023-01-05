@@ -108,89 +108,45 @@ def load_example_data() -> None:
                                      "hsa-MYH9_0116"
 
 
-def submit_query_button_function():
+# def submit_query_button_function():
+#
+#     # work with input data
+#     output_fields = db_is_selected(form_values)
+#
+#     sql_query = ""
+#
+#     for form in query_forms:
+#         print("form")
+#
+#         if 'operator1' in form:
+#
+#             # this is an addon condition with two operators
+#
+#             # since we already have a start query, we need to attach this one
+#             # via the operator1 supplied value, e.g. AND
+#
+#             sql_query += " " + form['operator1'].value + " "
+#
+#         if form['operator2'].value is "like":
+#             tmp = form['query'].value.replace("*", "", 1)
+#             sql_query += form['field'].value + " LIKE \"%" \
+#                          + tmp + "%\" "
+#         elif form['operator2'].value is "is":
+#             sql_query += form['field'].value + " == \"" \
+#                          + form['query'].value + "\" "
+#         elif form['operator2'].value is ">":
+#             sql_query += form['field'].value + " > \"" \
+#                          + form['query'].value + "\" "
+#         elif form['operator2'].value is "<":
+#             sql_query += form['field'].value + " < \"" \
+#                          + form['query'].value + "\" "
+#
+#     print(sql_query)
+#
+#     output = util.run_keyword_select_query(util,
+#                                            output_fields,
+#                                            sql_query)
 
-    # work with input data
-    output_fields = db_is_selected(form_values)
-
-    sql_query = ""
-
-    for form in query_forms:
-        print("form")
-
-        # this is the base condition, no additional operator1
-        if 'operator1' not in form:
-
-            print(form['query'].value)
-            print(form['operator2'].value)
-            print(form['field'].value)
-
-        else:
-            # this is an addon condition with two operators
-
-            # since we already have a start query, we need to attach this one
-            # via the operator1 supplied value, e.g. AND
-
-            sql_query += " " + form['operator1'].value + " "
-
-            print(form['query'].value)
-            print(form['operator1'].value)
-            print(form['operator2'].value)
-            print(form['field'].value)
-
-        if form['operator2'].value is "like":
-            tmp = form['query'].value.replace("*", "", 1)
-            sql_query += form['field'].value + " LIKE \"%" \
-                         + tmp + "%\" "
-        elif form['operator2'].value is "is":
-            sql_query += form['field'].value + " == \"" \
-                         + form['query'].value + "\" "
-        elif form['operator2'].value is ">":
-            sql_query += form['field'].value + " > \"" \
-                         + form['query'].value + "\" "
-        elif form['operator2'].value is "<":
-            sql_query += form['field'].value + " < \"" \
-                         + form['query'].value + "\" "
-        print(sql_query)
-
-    # print(sql_query)
-
-
-
-    # input_dict = dict(circbase=args.circbase_query,
-    #                   circatlas=args.circatlas_query,
-    #                   deepbase2=args.deepbase2_query,
-    #                   circpedia2=args.circpedia2_query,
-    #                   circbank=args.circbank_query,
-    #                   arraystar=args.arraystar_query,
-    #                   circrnadb=args.circrnadb_query,
-    #                   species=args.species_query,
-    #                   genome=args.genome_query,
-    #                   chr=args.chr_query,
-    #                   start=args.start_query,
-    #                   stop=args.stop_query,
-    #                   gene=args.gene_query
-    #                   )
-    #
-    # # print(input_dict)
-    #
-    #
-    #
-    #
-    #
-
-    #
-    # # remove last AND from query
-    # sql_query = sql_query[:-4]
-    #
-    #
-    #
-    # output = util.run_simple_select_query(util,
-    #                                       output_fields,
-    #                                       circrna_list,
-    #                                       form_values['db_checkbox'].value
-    #                                       )
-    #
     # output_fields.insert(0, form_values['db_checkbox'].value)
     # full_list = list((output_fields))
     #
@@ -240,23 +196,68 @@ def submit_query_button_function():
     # return processed_output
 
 
-def submit_convert_button_function():
+def submit_button_function():
+
+    print("button")
+    print( form_values['mode'] )
+
     # work with input data
     output_fields = db_is_selected(form_values)
 
-    if "uploaded_data" in form_values:
-        circrna_list = form_values['uploaded_data'].split('\n')
-    else:
-        circrna_list = form_values['textfield'].value.split('\n')
+    output = ""
 
-    output = util.run_simple_select_query(util,
-                                          output_fields,
-                                          circrna_list,
-                                          form_values['db_checkbox'].value
-                                          )
+    if form_values['mode'] is "convert":
 
-    if form_values['db_checkbox'].value not in output_fields:
-        output_fields.insert(0, form_values['db_checkbox'].value)
+        if "uploaded_data" in form_values:
+            circrna_list = form_values['uploaded_data'].split('\n')
+        else:
+            circrna_list = form_values['textfield'].value.split('\n')
+
+        output = util.run_simple_select_query(util,
+                                              output_fields,
+                                              circrna_list,
+                                              form_values['db_checkbox'].value
+                                              )
+
+        if form_values['db_checkbox'].value not in output_fields:
+            output_fields.insert(0, form_values['db_checkbox'].value)
+
+    elif form_values['mode'] is "query":
+
+        sql_query = ""
+        print(sql_query+" after reset")
+
+        for form in query_forms:
+            print("form")
+
+            if 'operator1' in form:
+                # this is an addon condition with two operators
+
+                # since we already have a start query, we need to attach this one
+                # via the operator1 supplied value, e.g. AND
+
+                sql_query += " " + form['operator1'].value + " "
+
+            if form['operator2'].value is "like":
+                tmp = form['query'].value.replace("*", "", 1)
+                sql_query += form['field'].value + " LIKE \"%" \
+                             + tmp + "%\" "
+            elif form['operator2'].value is "is":
+                sql_query += form['field'].value + " == \"" \
+                             + form['query'].value + "\" "
+            elif form['operator2'].value is ">":
+                sql_query += form['field'].value + " > \"" \
+                             + form['query'].value + "\" "
+            elif form['operator2'].value is "<":
+                sql_query += form['field'].value + " < \"" \
+                             + form['query'].value + "\" "
+
+        query_forms.clear()
+        print(sql_query)
+
+        output = util.run_keyword_select_query(util,
+                                               output_fields,
+                                               sql_query)
 
     full_list = list(output_fields)
 
@@ -430,6 +431,8 @@ async def landing_page():
     add_head_html()
     add_header()
 
+    form_values['mode'] = "convert"
+
     # ui.image('https://imgs.xkcd.com/comics/standards.png')
 
     prepare_application()
@@ -524,6 +527,8 @@ async def query_page():
     add_head_html()
     add_header()
 
+    form_values['mode'] = "query"
+
     prepare_application()
 
     form_values['chart'], form_values['dbsize'], form_values[
@@ -536,7 +541,7 @@ async def query_page():
     with ui.row():
         form_values['submit_query_button'] = \
             ui.button('Submit query', on_click=lambda:
-            ui.open(display_query_results_page)).props("disabled=false")
+            ui.open(display_results_page)).props("disabled=false")
 
         form_values['add_condition_button'] = \
             ui.button('Add condition', on_click=lambda:
@@ -597,7 +602,7 @@ async def query_page():
     add_drawers()
 
 
-@ui.page('/convert_results')
+@ui.page('/results')
 async def display_results_page():
     add_head_html()
     add_header()
@@ -605,20 +610,9 @@ async def display_results_page():
     session_id = str(uuid4())
 
     # this just makes sure we built the landing page first
-    if 'or' in form_values:
-        # form_values['table2'] = ui.table({'defaultColDef': {
-        #     'filter': True,
-        #     'sortable': True,
-        #     'resizable': True,
-        #     'cellStyle': {'textAlign': 'left'},
-        #     'headerClass': 'font-bold'
-        # },
-        #
-        #     'columnDefs': [],
-        #     'rowData': []
-        # }, html_columns=[0])
+    if 'mode' in form_values:
 
-        processed_output,form_values['table2'] = submit_convert_button_function()
+        processed_output,form_values['table2'] = submit_button_function()
 
         try:
             with open('tmp/' + session_id + ".csv", 'w') as f:
@@ -646,60 +640,6 @@ async def display_results_page():
         ui.html('<strong>Internal error encountered.</strong>'
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
-
-
-@ui.page('/results')
-async def display_query_results_page():
-    add_head_html()
-    add_header()
-
-    session_id = str(uuid4())
-
-    submit_query_button_function()
-
-    # # this just makes sure we built the landing page first
-    # if 'or' in form_values:
-    #     form_values['table2'] = ui.table({'defaultColDef': {
-    #         'filter': True,
-    #         'sortable': True,
-    #         'resizable': True,
-    #         'cellStyle': {'textAlign': 'left'},
-    #         'headerClass': 'font-bold'
-    #     },
-    #
-    #         'columnDefs': [],
-    #         'rowData': []
-    #     }, html_columns=[0])
-    #
-    #     processed_output = smubit_convert_button_function()
-    #
-    #     try:
-    #         with open('tmp/' + session_id + ".csv", 'w') as f:
-    #             f.write(processed_output)
-    #     except FileNotFoundError:
-    #         print("Output file could not be created")
-    #         exit(-1)
-    #
-    #     f.close()
-    #
-    #     ui.add_static_files('/download', 'tmp')
-    #
-    #     with ui.row().classes('self-center'):
-    #         ui.button('Download table',
-    #                   on_click=lambda e: ui.open(
-    #                       '/download/' + session_id + ".csv")) \
-    #             .classes('self-center')
-    #
-    #         ui.button('New query',
-    #                   on_click=lambda e: ui.open('/')).classes('self-center')
-    #
-    # else:
-    #     ui.open(landing_page)
-    #
-    #     ui.html('<strong>Internal error encountered.</strong>'
-    #             '<br/><a href=\"/\">Returning to main page</a>'
-    #             ).style('text-align:center;')
-
 
 def add_drawers() -> None:
     with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
