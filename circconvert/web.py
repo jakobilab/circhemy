@@ -268,6 +268,58 @@ def file_upload_handler(file) -> None:
     form_values['uploaded_data'] = data
 
 
+def add_left_drawer() -> None:
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4; '):
+        ui.image(
+            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+        ui.label('Select input ID type:')
+
+        form_values['db_checkbox'] = ui.select(
+            ["circBase", "CircAtlas", "Circpedia2", "CircBank", "Deepbase2",
+             "Arraystar", "CircRNADB"], value="CircAtlas",
+            label="ID format").style("width: 90%")
+
+        with ui.column():
+            ui.label('')
+            ui.label('Select output fields:')
+
+            with ui.row():
+                tmp = [ui.checkbox('Chr', value=True),
+                ui.checkbox('Start', value=True),
+                ui.checkbox('Stop', value=True)]
+
+            checkbox_list = tmp + [
+                ui.checkbox('circBase', value=True),
+                ui.checkbox('CircAtlas', value=True),
+                ui.checkbox('Circpedia2', value=True),
+                ui.checkbox('CircBank', value=True),
+                ui.checkbox('Deepbase2', value=True),
+                ui.checkbox('Arraystar', value=True),
+                ui.checkbox('CircRNADB', value=True)
+            ]
+            form_values['db_checkboxes'] = checkbox_list
+            ui.label('')
+
+        with ui.column():
+            ui.label('Output formatting:')
+
+            form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
+                                                ",": "Comma-delimited [,]",
+                                                ";": "Semicolon-delimited [;]"},
+                                               value="\t",
+                                               label="Separator character") \
+                .style("width: 90%")
+
+            form_values['select3'] = ui.select({"NA": "NA",
+                                                "\t": "Tab [\\t]",
+                                                "": "Don't print anything"},
+                                               value="NA",
+                                               label="Placeholder"
+                                                     " for unavailable "
+                                                     "fields") \
+                .style("width: 90%")
+
 def add_head_html() -> None:
     ui.add_head_html(
         (Path(__file__).parent / 'web' / 'static' / 'header.html').read_text())
@@ -349,8 +401,6 @@ async def landing_page():
 
     # ui.image('https://imgs.xkcd.com/comics/standards.png')
 
-
-
     form_values['textfield'] = ui.input(
         label='Please paste a list of circRNA IDs, one per line:',
         placeholder='start typing',
@@ -383,58 +433,9 @@ async def landing_page():
 
     ####################
 
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
-        ui.image(
-            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
-        ui.label('Select input ID type:')
+    add_left_drawer()
 
-        form_values['db_checkbox'] = ui.select(
-            ["circBase", "CircAtlas", "Circpedia2", "CircBank", "Deepbase2",
-             "Arraystar", "CircRNADB"], value="CircAtlas",
-            label="ID format").style("width: 90%")
-
-        with ui.column():
-            ui.label('')
-            ui.label('Select output fields:')
-
-            with ui.row():
-                tmp = [ui.checkbox('Chr', value=True),
-                ui.checkbox('Start', value=True),
-                ui.checkbox('Stop', value=True)]
-
-            checkbox_list = tmp + [
-                ui.checkbox('circBase', value=True),
-                ui.checkbox('CircAtlas', value=True),
-                ui.checkbox('Circpedia2', value=True),
-                ui.checkbox('CircBank', value=True),
-                ui.checkbox('Deepbase2', value=True),
-                ui.checkbox('Arraystar', value=True),
-                ui.checkbox('CircRNADB', value=True)
-            ]
-            form_values['db_checkboxes'] = checkbox_list
-            ui.label('')
-
-        with ui.column():
-            ui.label('Output formatting:')
-
-            form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
-                                                ",": "Comma-delimited [,]",
-                                                ";": "Semicolon-delimited [;]"},
-                                               value="\t",
-                                               label="Separator character") \
-                .style("width: 90%")
-
-            form_values['select3'] = ui.select({"NA": "NA",
-                                                "\t": "Tab [\\t]",
-                                                "": "Don't print anything"},
-                                               value="NA",
-                                               label="Placeholder"
-                                                     " for unavailable "
-                                                     "fields") \
-                .style("width: 90%")
-
-    add_drawers()
+    add_footer_and_right_drawer()
 
 
 # main landing page / also works as start page for converter function
@@ -473,47 +474,9 @@ async def query_page():
 
     ####################
 
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
-        ui.image(
-            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+    add_left_drawer()
 
-        with ui.column():
-            ui.label('')
-            ui.label('Select output fields:')
-
-            checkbox_list = [
-                ui.checkbox('circBase', value=True),
-                ui.checkbox('CircAtlas', value=True),
-                ui.checkbox('Circpedia2', value=True),
-                ui.checkbox('CircBank', value=True),
-                ui.checkbox('Deepbase2', value=True),
-                ui.checkbox('Arraystar', value=True),
-                ui.checkbox('CircRNADB', value=True)
-            ]
-            form_values['db_checkboxes'] = checkbox_list
-            ui.label('')
-
-        with ui.column():
-            ui.label('Output formatting:')
-
-            form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
-                                                ",": "Comma-delimited [,]",
-                                                ";": "Semicolon-delimited [;]"},
-                                               value="\t",
-                                               label="Separator character") \
-                .style("width: 90%")
-
-            form_values['select3'] = ui.select({"NA": "NA",
-                                                "\t": "Tab [\\t]",
-                                                "": "Don't print anything"},
-                                               value="NA",
-                                               label="Placeholder"
-                                                     " for unavailable "
-                                                     "fields") \
-                .style("width: 90%")
-
-    add_drawers()
+    add_footer_and_right_drawer()
 
 
 @ui.page('/results')
@@ -569,10 +532,10 @@ async def landing_page():
         ui.image(
             'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
 
-    add_drawers()
+    add_footer_and_right_drawer()
 
 
-def add_drawers() -> None:
+def add_footer_and_right_drawer() -> None:
     with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
             'bordered'):
         ui.label('Database Version ' + util.database_version + ' statistics')
