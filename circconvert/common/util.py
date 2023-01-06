@@ -67,7 +67,10 @@ class Util(object):
                         "CircBank": "http://www.circbank.cn/infoCirc.html?id=",
                         "Deepbase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
                         "Arraystar": "",
-                        "CircRNADB": ""
+                        "CircRNADB": "",
+                        "Chr": "",
+                        "Start": "",
+                        "Stop": ""
     }
 
     db_connection = ""
