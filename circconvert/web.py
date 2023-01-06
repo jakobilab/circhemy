@@ -108,100 +108,8 @@ def load_example_data() -> None:
                                      "hsa-MYH9_0116"
 
 
-# def submit_query_button_function():
-#
-#     # work with input data
-#     output_fields = db_is_selected(form_values)
-#
-#     sql_query = ""
-#
-#     for form in query_forms:
-#         print("form")
-#
-#         if 'operator1' in form:
-#
-#             # this is an addon condition with two operators
-#
-#             # since we already have a start query, we need to attach this one
-#             # via the operator1 supplied value, e.g. AND
-#
-#             sql_query += " " + form['operator1'].value + " "
-#
-#         if form['operator2'].value is "like":
-#             tmp = form['query'].value.replace("*", "", 1)
-#             sql_query += form['field'].value + " LIKE \"%" \
-#                          + tmp + "%\" "
-#         elif form['operator2'].value is "is":
-#             sql_query += form['field'].value + " == \"" \
-#                          + form['query'].value + "\" "
-#         elif form['operator2'].value is ">":
-#             sql_query += form['field'].value + " > \"" \
-#                          + form['query'].value + "\" "
-#         elif form['operator2'].value is "<":
-#             sql_query += form['field'].value + " < \"" \
-#                          + form['query'].value + "\" "
-#
-#     print(sql_query)
-#
-#     output = util.run_keyword_select_query(util,
-#                                            output_fields,
-#                                            sql_query)
-
-    # output_fields.insert(0, form_values['db_checkbox'].value)
-    # full_list = list((output_fields))
-    #
-    # processed_output = ""
-    #
-    # for item in full_list:
-    #     form_values['table2'].options['columnDefs'].append(
-    #         {'headerName': item, 'field': item})
-    #
-    #     processed_output = processed_output+item+form_values[
-    #                                                'select2'].value
-    #
-    # for line in output:
-    #
-    #     tmp_dict = dict()
-    #
-    #     for item in zip(line, full_list):
-    #         tmp_dict[item[1]] = item[0]
-    #         # if item[0]:
-    #         #     tmp_dict[item[1]] = "<strong>"+item[0]+"</strong>"
-    #         # else:
-    #         #     tmp_dict[item[1]] = item[0]
-    #
-    #
-    #     form_values['table2'].options['rowData'].append(tmp_dict)
-    #
-    # # remove last sep character
-    # processed_output = processed_output[:-1]
-    #
-    # # add new line for correct line break
-    # processed_output = processed_output+"\n"
-    #
-    # # form_values['table2'].style("height: 900px")
-    #
-    # form_values['table2'].style("width: 60%")
-    # form_values['table2'].style("text-align:center; "
-    #                             "margin-left:auto; "
-    #                             "margin-right:auto; ")
-    # form_values['table2'].update()
-    #
-    # processed_output = processed_output + util.process_sql_output(output,
-    #                                            seperator=form_values[
-    #                                                'select2'].value,
-    #                                            empty_char=form_values[
-    #                                                'select3'].value)
-    #
-    # return processed_output
-
-
 def submit_button_function():
 
-    print("button")
-    print( form_values['mode'] )
-
-    # work with input data
     output_fields = db_is_selected(form_values)
 
     output = ""
@@ -232,10 +140,6 @@ def submit_button_function():
 
             if 'operator1' in form:
                 # this is an addon condition with two operators
-
-                # since we already have a start query, we need to attach this one
-                # via the operator1 supplied value, e.g. AND
-
                 sql_query += " " + form['operator1'].value + " "
 
             if form['operator2'].value is "like":
@@ -289,7 +193,10 @@ def submit_button_function():
         for item in zip(line, full_list):
 
             if item[0] and util.external_db_urls[item[1]]:
-                tmp_dict[item[1]] = "<a style=\"text-decoration: underline;\" href="+util.external_db_urls[item[1]]+item[0]+" target=\"_blank\">"+item[0]+"</a>"
+                tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
+                                    "\" href="+util.external_db_urls[item[1]]\
+                                    +item[0]+" target=\"_blank\">"\
+                                    +item[0]+"</a>"
             else:
                 tmp_dict[item[1]] = item[0]
 
@@ -307,17 +214,18 @@ def submit_button_function():
 
     table.style("width: 75%")
     table.style("text-align:center; "
-                                "margin-left:auto; "
-                                "margin-right:auto; ")
+                "margin-left:auto; "
+                "margin-right:auto; ")
     table.update()
 
-    processed_output = processed_output + util.process_sql_output(output,
-                                                                  seperator=
-                                                                  form_values[
-                                                                      'select2'].value,
-                                                                  empty_char=
-                                                                  form_values[
-                                                                      'select3'].value)
+    processed_output = processed_output \
+                       + util.process_sql_output(output,
+                                                 seperator=
+                                                 form_values[
+                                                     'select2'].value,
+                                                 empty_char=
+                                                 form_values[
+                                                     'select3'].value)
 
     return processed_output, table
 
@@ -640,6 +548,7 @@ async def display_results_page():
         ui.html('<strong>Internal error encountered.</strong>'
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
+
 
 def add_drawers() -> None:
     with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
