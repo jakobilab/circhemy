@@ -35,13 +35,17 @@ ui.add_static_files('/fonts', Path(__file__).parent / 'web' / 'fonts')
 form_values = dict()
 query_forms = list()
 
+util.setup_database(util, util.database_location)
+
+form_values['chart'], form_values['dbsize'], form_values[
+    'chart2'] = util.database_stats(util)
+
+# run main application
+ui.run(title=util.program_name, show=False)
+
 
 def special_match(strg, search=re.compile(r'[^A-Za-z0-9_\-|:\n\t]').search):
     return not bool(search(strg))
-
-
-def prepare_application() -> None:
-    util.setup_database(util, util.database_location)
 
 
 def check_text_field_input(upload_data) -> str:
@@ -278,7 +282,7 @@ def add_header() -> None:
         'Convert circRNA IDs': '/',
         'Search circRNA database': '/query',
         'CLI application': '/#cli',
-        'About': '/#about'
+        'About': '/about'
     }
     with ui.header() \
             .classes('items-center duration-400 p-0 px-4 no-wrap') \
@@ -316,7 +320,7 @@ def add_conditions(container, new=False) -> None:
                     "width: 150px")
 
             query_values['field'] = ui.select(
-                ["circBase", "CircAtlas", "Circpedia2", "CircBank", "Deepbase2",
+                ["Chr","Start","Stop","circBase", "CircAtlas", "Circpedia2", "CircBank", "Deepbase2",
                  "Arraystar", "CircRNADB", "Chr", "Start", "Stop", "Genome",
                  "Species"],
                 value="circBase",
@@ -328,7 +332,9 @@ def add_conditions(container, new=False) -> None:
                 "width: 130px")
 
             query_values['query'] = ui.input(label='Enter search term',
-                                             placeholder='start typing', on_change=lambda e: check_query_text_field())
+                                             placeholder='start typing',
+                                             on_change=lambda e:
+                                             check_query_text_field())
 
     query_forms.append(query_values)
 
@@ -343,10 +349,7 @@ async def landing_page():
 
     # ui.image('https://imgs.xkcd.com/comics/standards.png')
 
-    prepare_application()
 
-    form_values['chart'], form_values['dbsize'], form_values[
-        'chart2'] = util.database_stats(util)
 
     form_values['textfield'] = ui.input(
         label='Please paste a list of circRNA IDs, one per line:',
@@ -395,7 +398,12 @@ async def landing_page():
             ui.label('')
             ui.label('Select output fields:')
 
-            checkbox_list = [
+            with ui.row():
+                tmp = [ui.checkbox('Chr', value=True),
+                ui.checkbox('Start', value=True),
+                ui.checkbox('Stop', value=True)]
+
+            checkbox_list = tmp + [
                 ui.checkbox('circBase', value=True),
                 ui.checkbox('CircAtlas', value=True),
                 ui.checkbox('Circpedia2', value=True),
@@ -436,8 +444,6 @@ async def query_page():
     add_header()
 
     form_values['mode'] = "query"
-
-    prepare_application()
 
     form_values['chart'], form_values['dbsize'], form_values[
         'chart2'] = util.database_stats(util)
@@ -549,6 +555,22 @@ async def display_results_page():
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
 
+@ui.page('/about')
+async def landing_page():
+    add_head_html()
+    add_header()
+
+    ui.html('<strong>About page</strong>'
+            '<br/><a href=\"/\">Returning to main page</a>'
+            ).style('text-align:center;')
+
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4; '):
+        ui.image(
+            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+
+    add_drawers()
+
 
 def add_drawers() -> None:
     with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
@@ -574,5 +596,3 @@ def add_drawers() -> None:
                 'https://github.com/jakobilab/')
 
 
-# run main application
-ui.run(title=util.program_name, show=False)
