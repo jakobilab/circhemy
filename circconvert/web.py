@@ -33,17 +33,25 @@ from nicegui import ui
 from nicegui import app
 from web import svg
 
-
+# create util instance for the web app
 util = common.util.Util
 
+# add static files for fonts and favicon
 ui.add_static_files('/favicon', Path(__file__).parent / 'web' / 'favicon')
 ui.add_static_files('/fonts', Path(__file__).parent / 'web' / 'fonts')
 
+# set up global variables
+
+# holds most variables for the convert form submission
 form_values = dict()
+
+# holds variables for query-based constraints that are added dynamically
 query_forms = list()
 
+# setup SQLite connection
 util.setup_database(util, util.database_location)
 
+# initialize statistics chart on the righthand side
 form_values['chart'], form_values['dbsize'], form_values[
     'chart2'] = util.database_stats(util)
 
