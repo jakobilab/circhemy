@@ -21,11 +21,18 @@
 from pathlib import Path
 from typing import List, Any
 from uuid import uuid4
-from nicegui import ui
-from web import svg
 from pygments.formatters import HtmlFormatter
+
 import re
+
+# own util functions
 import common.util
+
+# nicegui and web imports
+from nicegui import ui
+from nicegui import app
+from web import svg
+
 
 util = common.util.Util
 
@@ -354,6 +361,30 @@ def add_header() -> None:
             svg.github().classes('fill-white scale-125 m-1')
 
 
+def add_footer_and_right_drawer() -> None:
+    with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
+            'bordered'):
+        ui.label('Database Version ' + util.database_version + ' statistics')
+        ui.label('')
+
+        ui.label('Database by species/genome')
+
+        chart = ui.chart(form_values['chart']).classes('w-full h-64') \
+            .style("height: 350px")
+
+        ui.label('Database by CircRNA ID')
+        chart2 = ui.chart(form_values['chart2']).classes('w-full h-64') \
+            .style("height: 350px")
+
+    with ui.footer().style('background-color: #3874c8'):
+        ui.label(util.program_name + " | software version" +
+                 util.software_version + " | database version" +
+                 util.database_version)
+        ui.link('| © 2022 Jakobi Lab |', 'https://jakobilab.org')
+        ui.link('Visit Jakobi Lab @ GitHub ',
+                'https://github.com/jakobilab/')
+
+
 def remove_conditions(container) -> None:
     if len(query_forms) > 1:
         container.remove(-1)
@@ -518,6 +549,7 @@ async def display_results_page():
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
 
+
 @ui.page('/about')
 async def landing_page():
     add_head_html()
@@ -535,27 +567,9 @@ async def landing_page():
     add_footer_and_right_drawer()
 
 
-def add_footer_and_right_drawer() -> None:
-    with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
-            'bordered'):
-        ui.label('Database Version ' + util.database_version + ' statistics')
-        ui.label('')
+@app.get('/restapi/{max}')
+def generate_random_number(max: int):
+    return {'min': 0, 'max': max, 'value': random.randint(0, max)}
 
-        ui.label('Database by species/genome')
-
-        chart = ui.chart(form_values['chart']).classes('w-full h-64') \
-            .style("height: 350px")
-
-        ui.label('Database by CircRNA ID')
-        chart2 = ui.chart(form_values['chart2']).classes('w-full h-64') \
-            .style("height: 350px")
-
-    with ui.footer().style('background-color: #3874c8'):
-        ui.label(util.program_name + " | software version" +
-                 util.software_version + " | database version" +
-                 util.database_version)
-        ui.link('| © 2022 Jakobi Lab |', 'https://jakobilab.org')
-        ui.link('Visit Jakobi Lab @ GitHub ',
-                'https://github.com/jakobilab/')
 
 
