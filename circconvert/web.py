@@ -19,10 +19,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from typing import List, Any, Union
+from typing import List, Any
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from pygments.formatters import HtmlFormatter
 
 import re
@@ -669,6 +669,46 @@ class ConvertModel(BaseModel):
     output: List[str]
     query: List[str]
 
+    @validator('query', each_item=True)
+    def circrna_id_pattern_check(cls, v):
+        # print(v)
+        if not special_match(v):
+            raise ValueError('CircRNA IDs contains illegal characters.')
+        if v == "":
+            raise ValueError('No CircRNA IDs for conversion provided.')
+        return v
+
+    @validator('query')
+    def circrna_id_check_length(cls, v):
+        print()
+        if len(v) == 0:
+            raise ValueError('No CircRNA IDs for conversion provided.')
+        return v
+
+    @validator('input', allow_reuse=True)
+    def database_name_check(cls, v):
+
+        fields_allowed = list(util.external_db_urls.keys())
+
+        if v not in fields_allowed:
+            raise ValueError("Unsupported input field provided."
+                             " Supported fields are: "
+                             + ', '.join(fields_allowed)+
+                             ". Field names are case-sensitive.")
+        return v
+
+    @validator('output', each_item=True)
+    def database_name_check(cls, v):
+
+        fields_allowed = list(util.external_db_urls.keys())
+
+        if v not in fields_allowed:
+            raise ValueError("Unsupported input field provided."
+                             " Supported fields are: "
+                             + ', '.join(fields_allowed)+
+                             ". Field names are case-sensitive.")
+        return v
+
 
 # Data subclass for REST API calls from the query module
 class ConstraintModel(BaseModel):
@@ -676,6 +716,48 @@ class ConstraintModel(BaseModel):
     field: str
     operator1: str
     operator2: str
+
+    @validator('query')
+    def circrna_id_pattern_check(cls, v):
+        if not special_match(v):
+            raise ValueError('Query contains illegal characters.')
+        return v
+
+    @validator('field')
+    def field_name_check(cls, v):
+
+        fields_allowed = list(util.external_db_urls.keys())
+
+        if v not in fields_allowed:
+            raise ValueError("Unsupported input field provided."
+                             " Supported fields are: "
+                             + ', '.join(fields_allowed)+
+                             ". Field names are case-sensitive.")
+        return v
+
+    @validator('operator1')
+    def operator1_check(cls, v):
+
+        fields_allowed = ["AND", "OR", "AND NOT"]
+
+        if v not in fields_allowed:
+            raise ValueError("Unsupported operator1 provided."
+                             " Supported fields are: "
+                             + ', '.join(fields_allowed)+
+                             ". Field names are case-sensitive.")
+        return v
+
+    @validator('operator2')
+    def operator2_check(cls, v):
+
+        fields_allowed = ["is", "LIKE", ">", "<"]
+
+        if v not in fields_allowed:
+            raise ValueError("Unsupported operator1 provided."
+                             " Supported fields are: "
+                             + ', '.join(fields_allowed)+
+                             ". Field names are case-sensitive.")
+        return v
 
 
 # Data class for REST API calls from the query module
@@ -692,6 +774,5 @@ async def process_api_convert_call(data: ConvertModel):
 
 @app.post("/api/query")
 async def process_api_query_call(data: QueryModel):
-    print(data)
     out, table = generate_result_table(data.input, data.output)
     return table
