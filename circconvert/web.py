@@ -129,14 +129,14 @@ def load_example_data() -> None:
                                      "hsa-MYH9_0116"
 
 
-def generate_result_table(input_id=None, output_ids=None, query_ids=None):
+def generate_result_table(input_id=None, output_ids=None, query_data=None):
 
     # initialize empty to allow for empty results
     output = ""
 
     # function is called from REST API
-    if input_id:
-        circrna_list = query_ids
+    if input_id and type(input_id) != list:
+        circrna_list = query_data
 
         output_fields = output_ids
 
@@ -145,6 +145,50 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
                                               circrna_list,
                                               input_id
                                               )
+
+    # REST API query gets input_id from type list
+    # in this case the list holds the constraints for SQL query
+    # construction
+    elif input_id and type(input_id) is list:
+
+        output_fields = output_ids
+
+        sql_query = ""
+
+        constraint_id = 0
+
+
+        for constraint in input_id:
+
+            print(constraint.operator1)
+            print(constraint.operator2)
+            print(constraint.query)
+            print(constraint.field)
+
+            if constraint_id > 0:
+                sql_query += " " + constraint.operator1 + " "
+
+            if constraint.operator2 == "LIKE":
+                tmp = constraint.query.replace("*", "", 1)
+                sql_query += constraint.field + " LIKE \"%" \
+                             + tmp + "%\" "
+            elif constraint.operator2 is "is":
+                sql_query += constraint.field + " == \"" \
+                             + constraint.query+ "\" "
+            elif constraint.operator2 is ">":
+                sql_query += constraint.field + " > \"" \
+                             + constraint.query + "\" "
+            elif constraint.operator2 is "<":
+                sql_query += constraint.field + " < \"" \
+                             + constraint.query + "\" "
+
+            constraint_id = constraint_id + 1
+
+        print(sql_query)
+
+        output = util.run_keyword_select_query(util,
+                                               output_fields,
+                                               sql_query)
 
     # function called from web convert module
     elif form_values['mode'] is "convert":
@@ -180,7 +224,7 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
                 # this is an addon condition with two operators
                 sql_query += " " + form['operator1'].value + " "
 
-            if form['operator2'].value is "like":
+            if form['operator2'].value is "LIKE":
                 tmp = form['query'].value.replace("*", "", 1)
                 sql_query += form['field'].value + " LIKE \"%" \
                              + tmp + "%\" "
@@ -461,7 +505,7 @@ def add_conditions(container, new=False) -> None:
                 value="circBase",
                 label="Database field").style("width: 130px")
 
-            query_values['operator2'] = ui.select(["is", "like", ">", "<"],
+            query_values['operator2'] = ui.select(["is", "LIKE", ">", "<"],
                                                   value="is",
                                                   label="Query operator").style(
                 "width: 130px")
@@ -626,7 +670,28 @@ class ConvertModel(BaseModel):
     query: List[str]
 
 
-@app.post("/api/v1/convert")
+# Data subclass for REST API calls from the query module
+class ConstraintModel(BaseModel):
+    query: str
+    field: str
+    operator1: str
+    operator2: str
+
+
+# Data class for REST API calls from the query module
+class QueryModel(BaseModel):
+    input: List[ConstraintModel]
+    output: List[str]
+
+
+@app.post("/api/convert")
 async def process_api_convert_call(data: ConvertModel):
-    data, table = generate_result_table(data.input,data.output,data.query)
+    data, table = generate_result_table(data.input, data.output, data.query)
+    return table
+
+
+@app.post("/api/query")
+async def process_api_query_call(data: QueryModel):
+    print(data)
+    out, table = generate_result_table(data.input, data.output)
     return table
