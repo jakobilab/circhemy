@@ -131,17 +131,14 @@ def load_example_data() -> None:
 
 def generate_result_table(input_id=None, output_ids=None, query_ids=None):
 
+    # initialize empty to allow for empty results
+    output = ""
 
-
+    # function is called from REST API
     if input_id:
         circrna_list = query_ids
 
         output_fields = output_ids
-
-
-        print(input_id)
-        print(output_ids)
-        print(query_ids)
 
         output = util.run_simple_select_query(util,
                                               output_ids,
@@ -149,12 +146,10 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
                                               input_id
                                               )
 
-        print(output)
+    # function called from web convert module
     elif form_values['mode'] is "convert":
 
         output_fields = db_is_selected(form_values)
-
-        output = ""
 
         if "uploaded_data" in form_values:
             circrna_list = form_values['uploaded_data'].split('\n')
@@ -170,11 +165,10 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
         if form_values['db_checkbox'].value not in output_fields:
             output_fields.insert(0, form_values['db_checkbox'].value)
 
+    # function called from web query module
     elif form_values['mode'] is "query":
 
         output_fields = db_is_selected(form_values)
-
-        output = ""
 
         sql_query = ""
         print(sql_query+" after reset")
@@ -201,18 +195,16 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
                              + form['query'].value + "\" "
 
         query_forms.clear()
-        print(sql_query)
 
         output = util.run_keyword_select_query(util,
                                                output_fields,
                                                sql_query)
 
-    print(list(output_fields))
-
     full_list = list(output_fields)
 
     processed_output = ""
 
+    # only add AG Grid structures if we are calling from web
     if not input_id:
 
         table_base_dict = {'defaultColDef': {
@@ -226,19 +218,24 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
             'columnDefs': [],
             'rowData': []
         }
+    # REST API call, just return a more simple JSON-compatible table
     else:
-        table_base_dict = {            'columnDefs': [],
-            'rowData': []}
+        table_base_dict = {'columnDefs': [],
+                           'rowData': []
+                           }
 
     for item in full_list:
         table_base_dict['columnDefs'].append(
             {'headerName': item, 'field': item})
 
+        # make sure we only call this if called from web,
+        # otherwise this field is not initialized
         if not input_id:
 
             processed_output = processed_output + item + form_values[
                 'select2'].value
 
+    # did we actually have SQL rows returned?
     if output:
 
         print("output")
@@ -259,8 +256,6 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
 
             table_base_dict['rowData'].append(tmp_dict)
 
-        print(processed_output)
-
         # remove last sep character
         processed_output = processed_output[:-1]
 
@@ -269,9 +264,7 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
 
         # form_values['table2'].style("height: 900px")
 
-    print(full_list)
-    print(list(range(len(full_list))))
-
+    # only set up web table if we are calling from web
     if not input_id:
 
         table = ui.table(table_base_dict, html_columns=list(range(len(full_list))))
@@ -282,7 +275,6 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
                     "margin-right:auto; ")
         table.update()
 
-
         processed_output = processed_output \
                            + util.process_sql_output(output,
                                                      seperator=
@@ -292,8 +284,10 @@ def generate_result_table(input_id=None, output_ids=None, query_ids=None):
                                                      form_values[
                                                          'select3'].value)
 
+        # web return is the output and the nicegui table object
         return processed_output, table
     else:
+        # return is the output and a simple table dictionary
         return processed_output, table_base_dict
 
 
@@ -324,6 +318,7 @@ def check_query_text_field() -> None:
         else:
             form_values['submit_query_button'].props("disabled=true")
         form_values['submit_query_button'].update()
+
 
 def file_upload_handler(file) -> None:
     data = file.content.decode('UTF-8')
@@ -382,6 +377,7 @@ def add_left_drawer() -> None:
                                                      " for unavailable "
                                                      "fields") \
                 .style("width: 90%")
+
 
 def add_head_html() -> None:
     ui.add_head_html(
@@ -623,6 +619,7 @@ async def landing_page():
     add_footer_and_right_drawer()
 
 
+# Data class for REST API calls from the convert module
 class ConvertModel(BaseModel):
     input: str
     output: List[str]
