@@ -19,8 +19,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from typing import List, Any
+from typing import List, Any, Union
 from uuid import uuid4
+
+from pydantic import BaseModel
 from pygments.formatters import HtmlFormatter
 
 import re
@@ -127,13 +129,32 @@ def load_example_data() -> None:
                                      "hsa-MYH9_0116"
 
 
-def submit_button_function():
+def generate_result_table(input_id=None, output_ids=None, query_ids=None):
 
-    output_fields = db_is_selected(form_values)
 
-    output = ""
 
-    if form_values['mode'] is "convert":
+    if input_id:
+        circrna_list = query_ids
+
+        output_fields = output_ids
+
+
+        print(input_id)
+        print(output_ids)
+        print(query_ids)
+
+        output = util.run_simple_select_query(util,
+                                              output_ids,
+                                              circrna_list,
+                                              input_id
+                                              )
+
+        print(output)
+    elif form_values['mode'] is "convert":
+
+        output_fields = db_is_selected(form_values)
+
+        output = ""
 
         if "uploaded_data" in form_values:
             circrna_list = form_values['uploaded_data'].split('\n')
@@ -150,6 +171,10 @@ def submit_button_function():
             output_fields.insert(0, form_values['db_checkbox'].value)
 
     elif form_values['mode'] is "query":
+
+        output_fields = db_is_selected(form_values)
+
+        output = ""
 
         sql_query = ""
         print(sql_query+" after reset")
@@ -182,71 +207,94 @@ def submit_button_function():
                                                output_fields,
                                                sql_query)
 
+    print(list(output_fields))
+
     full_list = list(output_fields)
 
     processed_output = ""
 
-    table_base_dict = {'defaultColDef': {
-        'filter': True,
-        'sortable': True,
-        'resizable': True,
-        'cellStyle': {'textAlign': 'left'},
-        'headerClass': 'font-bold'
-    },
+    if not input_id:
 
-        'columnDefs': [],
-        'rowData': []
-    }
+        table_base_dict = {'defaultColDef': {
+            'filter': True,
+            'sortable': True,
+            'resizable': True,
+            'cellStyle': {'textAlign': 'left'},
+            'headerClass': 'font-bold'
+        },
+
+            'columnDefs': [],
+            'rowData': []
+        }
+    else:
+        table_base_dict = {            'columnDefs': [],
+            'rowData': []}
 
     for item in full_list:
         table_base_dict['columnDefs'].append(
             {'headerName': item, 'field': item})
 
-        processed_output = processed_output + item + form_values[
-            'select2'].value
+        if not input_id:
 
-    for line in output:
+            processed_output = processed_output + item + form_values[
+                'select2'].value
 
-        tmp_dict = dict()
+    if output:
 
-        for item in zip(line, full_list):
+        print("output")
 
-            if item[0] and util.external_db_urls[item[1]]:
-                tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
-                                    "\" href="+util.external_db_urls[item[1]]\
-                                    +item[0]+" target=\"_blank\">"\
-                                    +item[0]+"</a>"
-            else:
-                tmp_dict[item[1]] = item[0]
+        for line in output:
 
-        table_base_dict['rowData'].append(tmp_dict)
+            tmp_dict = dict()
 
-    # remove last sep character
-    processed_output = processed_output[:-1]
+            for item in zip(line, full_list):
 
-    # add new line for correct line break
-    processed_output = processed_output + "\n"
+                if item[0] and util.external_db_urls[item[1]] and not input_id:
+                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
+                                        "\" href="+util.external_db_urls[item[1]]\
+                                        +item[0]+" target=\"_blank\">"\
+                                        +item[0]+"</a>"
+                else:
+                    tmp_dict[item[1]] = item[0]
 
-    # form_values['table2'].style("height: 900px")
+            table_base_dict['rowData'].append(tmp_dict)
 
-    table = ui.table(table_base_dict, html_columns=list(range(len(full_list))))
+        print(processed_output)
 
-    table.style("width: 75%")
-    table.style("text-align:center; "
-                "margin-left:auto; "
-                "margin-right:auto; ")
-    table.update()
+        # remove last sep character
+        processed_output = processed_output[:-1]
 
-    processed_output = processed_output \
-                       + util.process_sql_output(output,
-                                                 seperator=
-                                                 form_values[
-                                                     'select2'].value,
-                                                 empty_char=
-                                                 form_values[
-                                                     'select3'].value)
+        # add new line for correct line break
+        processed_output = processed_output + "\n"
 
-    return processed_output, table
+        # form_values['table2'].style("height: 900px")
+
+    print(full_list)
+    print(list(range(len(full_list))))
+
+    if not input_id:
+
+        table = ui.table(table_base_dict, html_columns=list(range(len(full_list))))
+
+        table.style("width: 75%")
+        table.style("text-align:center; "
+                    "margin-left:auto; "
+                    "margin-right:auto; ")
+        table.update()
+
+
+        processed_output = processed_output \
+                           + util.process_sql_output(output,
+                                                     seperator=
+                                                     form_values[
+                                                         'select2'].value,
+                                                     empty_char=
+                                                     form_values[
+                                                         'select3'].value)
+
+        return processed_output, table
+    else:
+        return processed_output, table_base_dict
 
 
 def update_found_circrnas(data) -> str:
@@ -528,7 +576,7 @@ async def display_results_page():
     # this just makes sure we built the landing page first
     if 'mode' in form_values:
 
-        processed_output,form_values['table2'] = submit_button_function()
+        processed_output,form_values['table2'] = generate_result_table()
 
         try:
             with open('tmp/' + session_id + ".csv", 'w') as f:
@@ -575,9 +623,13 @@ async def landing_page():
     add_footer_and_right_drawer()
 
 
-@app.get('/restapi/{max}')
-def generate_random_number(max: int):
-    return {'min': 0, 'max': max, 'value': random.randint(0, max)}
+class ConvertModel(BaseModel):
+    input: str
+    output: List[str]
+    query: List[str]
 
 
-
+@app.post("/api/v1/convert")
+async def process_api_convert_call(data: ConvertModel):
+    data, table = generate_result_table(data.input,data.output,data.query)
+    return table
