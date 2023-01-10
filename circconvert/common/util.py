@@ -68,6 +68,7 @@ class Util(object):
                         "Deepbase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
                         "Arraystar": "",
                         "CircRNADB": "",
+                        "Circ2Disease": "http://bioinformatics.zju.edu.cn/Circ2Disease/browse_circRNA_result.php?circRNA=",
                         "Chr": "",
                         "Start": "",
                         "Stop": ""
