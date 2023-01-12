@@ -17,22 +17,15 @@ import sqlite3
 
 
 class Util(object):
-    """A template class for new submodules.
-
-    Attributes:
-        cli_params: Command lines params supplied by the user for the current module
-        program_name: Name of this module
-        version: Version of the module
-    """
 
     # global settings
-    software_version = "0.0.1-dev"
+    software_version = "0.0.2-dev"
 
-    database_version = "DB-0.0.1-dev"
+    database_version = "DB-0.0.2-dev"
 
     program_name = "circconvert"
 
-    database_location = "../circrna.db"
+    database_location = "../circconvert.sqlite3"
 
     database_table_name = "circrnadb"
 
@@ -68,16 +61,17 @@ class Util(object):
                         "Deepbase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
                         "Arraystar": "",
                         "CircRNADB": "",
+                        "riboCIRC": "http://www.ribocirc.com/rna_detail.php?dependent=Condition-independent&circ_id=",
                         "Circ2Disease": "http://bioinformatics.zju.edu.cn/Circ2Disease/browse_circRNA_result.php?circRNA=",
+                        "Pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
+                        "exorBase2": "http://www.exorbase.org/exoRBaseV2/detail/detailInfo?kind=circRNA&id=",
                         "Chr": "",
                         "Start": "",
                         "Stop": ""
-    }
+                        }
 
     db_connection = ""
     db_cursor = ""
-
-
 
     def check_input_field_name(self, field):
         if field not in self.db_columns:
