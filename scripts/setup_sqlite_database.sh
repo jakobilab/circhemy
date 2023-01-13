@@ -25,15 +25,16 @@ then
 fi
 
 
-echo "Loading base SQL table schema...old database will be ERASED!"
+echo "Loading base SQL table schema."
 
-sqlite3 ../circconvert.sqlite3 < ../data/circrnadb_schema.sql
+sqlite3 ../data/circconvert.sqlite3 < ../data/circrnadb_schema.sql
 
-echo "SQL database schema ready, starting data import"
+echo "SQL database schema ready, starting data import."
 
-sqlite3 ../circconvert.sqlite3 << EOF
+sqlite3 ../data/circconvert.sqlite3 << EOF
 .mode csv
-.import ../data/raw/sqlite_export.csv circrnadb
+.separator "\t"
+.import ../data/circrnadb_data.csv circrnadb
 VACUUM;
 EOF
 
