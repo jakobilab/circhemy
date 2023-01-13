@@ -591,9 +591,11 @@ async def landing_page():
     form_values['or'] = ui.label('- OR -')
 
     form_values['upload'] = ui.upload(
-        label="Click to select a file; upload via button to the right",
+        label="1) Click + to select file "
+              "2) upload file via button to the right "
+              "3) press 'convert circRNA IDs' button",
         on_upload=lambda e: file_upload_handler(e.files[0])).style(
-        "width: 100%")
+        "width: 60%")
 
     with ui.row():
         form_values['submit_button'] = \
