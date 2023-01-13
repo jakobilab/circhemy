@@ -69,9 +69,6 @@ def check_text_field_input(upload_data) -> str:
         circ_list = str(form_values['textfield'].value)
     else:
         circ_list = upload_data
-        print(upload_data)
-
-    print(circ_list)
 
     list_okay = special_match(circ_list)
 
@@ -111,6 +108,29 @@ def db_is_selected(form_values) -> List[Any]:
             checklist.append(item.text)
 
     return checklist
+
+
+def add_if_not_in_list(input_list=[], item_list=[]):
+
+    for item in item_list:
+        if item not in input_list:
+            input_list.append(item)
+
+    return input_list
+
+
+def get_coordinate_positions(input_list=[]):
+
+    return_dict = {"Chr": "", "Start": "", "Stop": "", "Genome": ""}
+
+    for item in return_dict:
+        index = 0
+        for field in input_list:
+            if field == item:
+                return_dict[item] = index
+            index = index +1
+
+    return return_dict
 
 
 def load_example_data() -> None:
@@ -158,11 +178,6 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
 
         for constraint in input_id:
 
-            print(constraint.operator1)
-            print(constraint.operator2)
-            print(constraint.query)
-            print(constraint.field)
-
             if constraint_id > 0:
                 sql_query += " " + constraint.operator1 + " "
 
@@ -181,9 +196,6 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
                              + constraint.query + "\" "
 
             constraint_id = constraint_id + 1
-
-        print(sql_query)
-
         output = util.run_keyword_select_query(util,
                                                output_fields,
                                                sql_query)
@@ -192,6 +204,13 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
     elif form_values['mode'] is "convert":
 
         output_fields = db_is_selected(form_values)
+
+        # we always need these fields for genome browser links
+        output_fields = add_if_not_in_list(output_fields, ["Chr",
+                                                           "Start",
+                                                           "Stop",
+                                                           "Genome"
+                                                           ])
 
         if "uploaded_data" in form_values:
             circrna_list = form_values['uploaded_data'].split('\n')
@@ -212,11 +231,16 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
 
         output_fields = db_is_selected(form_values)
 
+        # we always need these fields for genome browser links
+        output_fields = add_if_not_in_list(output_fields, ["Chr",
+                                                           "Start",
+                                                           "Stop",
+                                                           "Genome"
+                                                           ])
+
         sql_query = ""
-        print(sql_query+" after reset")
 
         for form in query_forms:
-            print("form")
 
             if 'operator1' in form:
                 # this is an addon condition with two operators
@@ -280,24 +304,55 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
     # did we actually have SQL rows returned?
     if output:
 
-        print("output")
+        # holds index of coordinates + genome build in field list
+        idx = get_coordinate_positions(full_list)
 
         for line in output:
 
             tmp_dict = dict()
 
-            for item in zip(line, full_list):
+            zipped = zip(line, full_list)
+
+            # continue with integration of genome browser urls
+            # we have fixed genome and potentially coordinates
+            # we just have to tie all together in the special case of those
+            # fields and manually get item information from the list
+            # we probably have to add a counter to get to the correct position
+
+            for item in zipped:
 
                 if item[0] == "NA":
                     tmp_dict[item[1]] = ""
 
-                elif item[0] != "NA"\
+                # special case for genome browser links
+                # not handled by normal external DB URL dict
+                # since we need to build the link component first
+                elif item[1] in ["Chr", "Start", "Stop"] and not input_id:
+
+                    # build pos format: chrXZY:1234-5789
+                    pos = line[idx['Chr']] + ":" + \
+                          str(line[idx['Start']]) + \
+                          "-" + \
+                          str(line[idx['Stop']])
+
+                    build = line[idx['Genome']]
+
+                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
+                                        "\" href=\"" + util.external_db_urls[
+                                            "Genome-Browser"] \
+                                        + "db=" + build + "&" \
+                                        + "pos=" + pos + "\"" \
+                                        + " target=\"_blank\">" \
+                                        + str(item[0]) + "</a>"
+
+                elif item[0] != "NA" \
                         and util.external_db_urls[item[1]] \
                         and not input_id:
                     tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
-                                        "\" href="+util.external_db_urls[item[1]]\
-                                        +item[0]+" target=\"_blank\">"\
-                                        +item[0]+"</a>"
+                                        "\" href=\"" + util.external_db_urls[
+                                            item[1]] \
+                                        + str(item[0]) + "\" target=\"_blank\">" \
+                                        + str(item[0]) + "</a>"
                 else:
                     tmp_dict[item[1]] = item[0]
 
@@ -359,7 +414,7 @@ def check_query_text_field() -> None:
         for form in query_forms:
             if not form['query'].value:
                 all_good = False
-        # print(form['query'].value)
+
         if all_good:
             form_values['submit_query_button'].props(remove="disabled=true")
         else:
@@ -669,7 +724,6 @@ class ConvertModel(BaseModel):
 
     @validator('query', each_item=True)
     def circrna_id_pattern_check(cls, v):
-        # print(v)
         if not special_match(v):
             raise ValueError('CircRNA IDs contains illegal characters.')
         if v == "":
@@ -678,7 +732,6 @@ class ConvertModel(BaseModel):
 
     @validator('query')
     def circrna_id_check_length(cls, v):
-        print()
         if len(v) == 0:
             raise ValueError('No CircRNA IDs for conversion provided.')
         return v
