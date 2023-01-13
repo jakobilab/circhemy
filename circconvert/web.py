@@ -531,7 +531,7 @@ def add_footer_and_right_drawer() -> None:
         ui.label(util.program_name + " | software version" +
                  util.software_version + " | database version" +
                  util.database_version)
-        ui.link('| © 2022 Jakobi Lab |', 'https://jakobilab.org')
+        ui.link(' © 2022 Jakobi Lab ', 'https://jakobilab.org')
         ui.link('Visit Jakobi Lab @ GitHub ',
                 'https://github.com/jakobilab/')
 
