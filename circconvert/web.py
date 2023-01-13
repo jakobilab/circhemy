@@ -31,16 +31,15 @@ import re
 import common.util
 
 # nicegui and web imports
-from nicegui import ui
-from nicegui import app
+from nicegui import ui, app
 from web import svg
 
 # create util instance for the web app
 util = common.util.Util
 
 # add static files for fonts and favicon
-ui.add_static_files('/favicon', Path(__file__).parent / 'web' / 'favicon')
-ui.add_static_files('/fonts', Path(__file__).parent / 'web' / 'fonts')
+app.add_static_files('/favicon', Path(__file__).parent / 'web' / 'favicon')
+app.add_static_files('/fonts', Path(__file__).parent / 'web' / 'fonts')
 
 # set up global variables
 
@@ -156,7 +155,6 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
         sql_query = ""
 
         constraint_id = 0
-
 
         for constraint in input_id:
 
@@ -370,17 +368,17 @@ def file_upload_handler(file) -> None:
     form_values['uploaded_data'] = data
 
 
-def add_left_drawer() -> None:
+def add_left_drawer(convert=False) -> None:
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
         ui.image(
             'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
         ui.label('Select input ID type:')
 
-        form_values['db_checkbox'] = ui.select(
-            ["circBase", "CircAtlas", "Circpedia2", "CircBank", "Deepbase2",
-             "Arraystar", "CircRNADB"], value="CircAtlas",
-            label="ID format").style("width: 90%")
+        if convert:
+            form_values['db_checkbox'] = ui.select(
+                util.select_db_columns, value="CircAtlas",
+                label="ID format").style("width: 90%")
 
         with ui.column():
             ui.label('')
@@ -391,15 +389,11 @@ def add_left_drawer() -> None:
                 ui.checkbox('Start', value=True),
                 ui.checkbox('Stop', value=True)]
 
-            checkbox_list = tmp + [
-                ui.checkbox('circBase', value=True),
-                ui.checkbox('CircAtlas', value=True),
-                ui.checkbox('Circpedia2', value=True),
-                ui.checkbox('CircBank', value=True),
-                ui.checkbox('Deepbase2', value=True),
-                ui.checkbox('Arraystar', value=True),
-                ui.checkbox('CircRNADB', value=True)
-            ]
+            db_entries = []
+            for entry in util.select_db_columns:
+                db_entries.append(ui.checkbox(entry, value=True))
+
+            checkbox_list = tmp + db_entries
             form_values['db_checkboxes'] = checkbox_list
             ui.label('')
 
@@ -434,9 +428,10 @@ def add_head_html() -> None:
 
 def add_header() -> None:
     menu_items = {
-        'Convert circRNA IDs': '/',
-        'Search circRNA database': '/query',
-        'CLI application': '/#cli',
+        'CircRNA ID conversion': '/',
+        'Multi-database search': '/query',
+        'CLI application': '/cli',
+        'REST API access': '/rest',
         'About': '/about'
     }
     with ui.header() \
@@ -499,9 +494,7 @@ def add_conditions(container, new=False) -> None:
                     "width: 150px")
 
             query_values['field'] = ui.select(
-                ["Chr","Start","Stop","circBase", "CircAtlas", "Circpedia2", "CircBank", "Deepbase2",
-                 "Arraystar", "CircRNADB", "Chr", "Start", "Stop", "Genome",
-                 "Species"],
+                util.db_columns,
                 value="circBase",
                 label="Database field").style("width: 130px")
 
@@ -538,7 +531,7 @@ async def landing_page():
     form_values['or'] = ui.label('- OR -')
 
     form_values['upload'] = ui.upload(
-        file_picker_label="Click to select a file; upload via button to the right",
+        label="Click to select a file; upload via button to the right",
         on_upload=lambda e: file_upload_handler(e.files[0])).style(
         "width: 100%")
 
@@ -560,7 +553,7 @@ async def landing_page():
 
     ####################
 
-    add_left_drawer()
+    add_left_drawer(convert=True)
 
     add_footer_and_right_drawer()
 
@@ -627,7 +620,7 @@ async def display_results_page():
 
         f.close()
 
-        ui.add_static_files('/download', 'tmp')
+        app.add_static_files('/download', 'tmp')
 
         with ui.row().classes('self-center'):
             ui.button('Download table',
