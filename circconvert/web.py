@@ -288,7 +288,12 @@ def generate_result_table(input_id=None, output_ids=None, query_data=None):
 
             for item in zip(line, full_list):
 
-                if item[0] and util.external_db_urls[item[1]] and not input_id:
+                if item[0] == "NA":
+                    tmp_dict[item[1]] = ""
+
+                elif item[0] != "NA"\
+                        and util.external_db_urls[item[1]] \
+                        and not input_id:
                     tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
                                         "\" href="+util.external_db_urls[item[1]]\
                                         +item[0]+" target=\"_blank\">"\
