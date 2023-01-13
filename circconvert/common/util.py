@@ -72,7 +72,9 @@ class Util(object):
                         "exorBase2": "http://www.exorbase.org/exoRBaseV2/detail/detailInfo?kind=circRNA&id=",
                         "Chr": "",
                         "Start": "",
-                        "Stop": ""
+                        "Stop": "",
+                        "Genome": "",
+                        "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?"
                         }
 
     db_connection = ""
