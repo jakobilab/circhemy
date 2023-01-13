@@ -25,7 +25,7 @@ class Util(object):
 
     program_name = "circconvert"
 
-    database_location = "../circconvert.sqlite3"
+    database_location = "../data/circconvert.sqlite3"
 
     database_table_name = "circrnadb"
 
@@ -40,27 +40,32 @@ class Util(object):
                             "rn5",
                             "rn6"]
 
-    db_columns = ["circbase",
-                  "circatlas",
-                  "deepbase2",
-                  "circpedia2",
-                  "circbank",
-                  "arraystar",
-                  "circrnadb",
-                  "gene",
-                  "species",
-                  "chr",
-                  "start",
-                  "stop",
-                  "genome"]
+    select_db_columns = [
+        "circBase",
+        "CircAtlas",
+        "circRNADB",
+        "circBank",
+        "Deepbase2",
+        "Circpedia2",
+        "riboCIRC",
+        "exorBase2",
+        "Arraystar",
+        "Pubmed"
+    ]
+
+    db_columns = ["Species"] + select_db_columns + ["Chr",
+                                                    "Start",
+                                                    "Stop",
+                                                    "Strand",
+                                                    "Genome"]
 
     external_db_urls = {"circBase": "http://www.circbase.org/cgi-bin/singlerecord.cgi?id=",
                         "CircAtlas": "http://159.226.67.237:8080/new/circ_detail.php?ID=",
                         "Circpedia2": "",
-                        "CircBank": "http://www.circbank.cn/infoCirc.html?id=",
+                        "circBank": "http://www.circbank.cn/infoCirc.html?id=",
                         "Deepbase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
                         "Arraystar": "",
-                        "CircRNADB": "",
+                        "circRNADB": "",
                         "riboCIRC": "http://www.ribocirc.com/rna_detail.php?dependent=Condition-independent&circ_id=",
                         "Circ2Disease": "http://bioinformatics.zju.edu.cn/Circ2Disease/browse_circRNA_result.php?circRNA=",
                         "Pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
@@ -104,8 +109,8 @@ class Util(object):
 
         dbsize = self.db_cursor.execute(sql).fetchall()[0][0]
 
-        sql = "SELECT count(genome), genome, species FROM "+\
-              self.database_table_name+" group by genome"
+        sql = "SELECT count(Genome), Genome, Species FROM "+\
+              self.database_table_name+" group by Genome"
 
         sql_output = self.db_cursor.execute(sql).fetchall()
 
