@@ -489,7 +489,7 @@ def add_head_html() -> None:
 def add_header() -> None:
     menu_items = {
         'CircRNA ID conversion': '/',
-        'Multi-database search': '/query',
+        'Browse databases': '/query',
         'CLI application': '/cli',
         'REST API access': '/rest',
         'About': '/about'
@@ -707,6 +707,40 @@ async def landing_page():
     add_header()
 
     ui.html('<strong>About page</strong>'
+            '<br/><a href=\"/\">Returning to main page</a>'
+            ).style('text-align:center;')
+
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4; '):
+        ui.image(
+            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+
+    add_footer_and_right_drawer()
+
+
+@ui.page('/rest')
+async def landing_page():
+    add_head_html()
+    add_header()
+
+    ui.html('<strong>REST page</strong>'
+            '<br/><a href=\"/\">Returning to main page</a>'
+            ).style('text-align:center;')
+
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4; '):
+        ui.image(
+            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+
+    add_footer_and_right_drawer()
+
+
+@ui.page('/cli')
+async def landing_page():
+    add_head_html()
+    add_header()
+
+    ui.html('<strong>CLI page</strong>'
             '<br/><a href=\"/\">Returning to main page</a>'
             ).style('text-align:center;')
 
