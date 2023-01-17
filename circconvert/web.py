@@ -31,7 +31,8 @@ import re
 import common.util
 
 # nicegui and web imports
-from nicegui import ui, app
+from fastapi import Request, Response
+from nicegui import Client, app, ui
 from web import svg
 
 # create util instance for the web app
@@ -40,6 +41,7 @@ util = common.util.Util
 # add static files for fonts and favicon
 app.add_static_files('/favicon', Path(__file__).parent / 'web' / 'favicon')
 app.add_static_files('/fonts', Path(__file__).parent / 'web' / 'fonts')
+app.add_static_files('/static', Path(__file__).parent / 'web' / 'static')
 
 # set up global variables
 
@@ -431,9 +433,10 @@ def file_upload_handler(file) -> None:
 def add_left_drawer(convert=False) -> None:
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
-        ui.image(
-            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
-        ui.label('Select input ID type:')
+
+        generate_logo()
+
+        ui.label('Select input ID type:').style("text-decoration: underline;")
 
         if convert:
             form_values['db_checkbox'] = ui.select(
@@ -442,23 +445,39 @@ def add_left_drawer(convert=False) -> None:
 
         with ui.column():
             ui.label('')
-            ui.label('Select output fields:')
+            ui.label('Select output fields:').style(
+                "text-decoration: underline;")
 
+            ui.label("Genomic Coordinates")
             with ui.row():
                 tmp = [ui.checkbox('Chr', value=True),
-                ui.checkbox('Start', value=True),
-                ui.checkbox('Stop', value=True)]
+                       ui.checkbox('Start', value=True),
+                       ui.checkbox('Stop', value=True)]
 
             db_entries = []
-            for entry in util.select_db_columns:
-                db_entries.append(ui.checkbox(entry, value=True))
+            ui.label("Databases")
+
+            with ui.row():
+                with ui.column():
+                    for item in range(int(len(util.select_db_columns) / 2)):
+                        db_entries.append(
+                            ui.checkbox(util.select_db_columns[item],
+                                        value=True))
+
+                with ui.column():
+                    for item in range(int(len(util.select_db_columns) / 2),
+                                      len(util.select_db_columns)):
+                        db_entries.append(
+                            ui.checkbox(util.select_db_columns[item],
+                                        value=True))
 
             checkbox_list = tmp + db_entries
             form_values['db_checkboxes'] = checkbox_list
             ui.label('')
 
         with ui.column():
-            ui.label('Output formatting:')
+            ui.label('Select Output Format:').style(
+                "text-decoration: underline;")
 
             form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
                                                 ",": "Comma-delimited [,]",
@@ -486,8 +505,28 @@ def add_head_html() -> None:
         f"<style>{(Path(__file__).parent / 'web' / 'static' / 'style.css').read_text()}</style>")
 
 
+def generate_logo() -> None:
+    # program name as link
+    ui.html("<a href=\"/\">" + util.program_name + "</a>").style(
+        'text-align: center; font-size: 26pt;')
+
+    ui.image("http://localhost:8080/static/logo2.png"). \
+        tooltip("al·che·my - noun - The medieval forerunner of chemistry, "
+                "based on the supposed transformation of matter. "
+                "\"A seemingly magical process of transformation, "
+                "creation, or combination.\"")
+
+    # subtitle
+    ui.html("The alchemy of<br/>circular RNA ID conversion"). \
+        tooltip('...are shown on mouse over').style(
+        'text-align: center; font-size: 16pt;')
+
+    ui.html("<br/>").style('text-align: center; font-size: 12t;')
+
+
 def add_header() -> None:
     menu_items = {
+        'What\'s new?': '/news',
         'CircRNA ID conversion': '/',
         'Browse databases': '/query',
         'CLI application': '/cli',
@@ -513,8 +552,7 @@ def add_header() -> None:
 
 
 def add_footer_and_right_drawer() -> None:
-    with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props(
-            'bordered'):
+    with ui.right_drawer(fixed=False).style('background-color: #ebf1fa'):
         ui.label('Database Version ' + util.database_version + ' statistics')
         ui.label('')
 
@@ -570,7 +608,6 @@ def add_conditions(container, new=False) -> None:
 
     query_forms.append(query_values)
 
-
 # main landing page / also works as start page for converter function
 @ui.page('/')
 async def landing_page():
@@ -618,6 +655,121 @@ async def landing_page():
     add_left_drawer(convert=True)
 
     add_footer_and_right_drawer()
+
+@ui.page('/test')
+async def test_page():
+    add_head_html()
+    add_header()
+
+    ####################
+    with ui.row():
+        with ui.column().style(
+            'background-color: #d7e3f4; '):
+            generate_logo()
+
+            ui.label('Select input ID type:').style("text-decoration: underline;")
+
+            form_values['db_checkbox'] = ui.select(
+                util.select_db_columns, value="CircAtlas",
+                label="ID format").style("width: 90%")
+
+            with ui.column():
+                ui.label('')
+                ui.label('Select output fields:').style(
+                    "text-decoration: underline;")
+
+                ui.label("Genomic Coordinates")
+                with ui.row():
+                    tmp = [ui.checkbox('Chr', value=True),
+                           ui.checkbox('Start', value=True),
+                           ui.checkbox('Stop', value=True)]
+
+                db_entries = []
+                ui.label("Databases")
+
+                with ui.row():
+                    with ui.column():
+                        for item in range(int(len(util.select_db_columns) / 2)):
+                            db_entries.append(
+                                ui.checkbox(util.select_db_columns[item],
+                                            value=True))
+
+                    with ui.column():
+                        for item in range(int(len(util.select_db_columns) / 2),
+                                          len(util.select_db_columns)):
+                            db_entries.append(
+                                ui.checkbox(util.select_db_columns[item],
+                                            value=True))
+
+                checkbox_list = tmp + db_entries
+                form_values['db_checkboxes'] = checkbox_list
+                ui.label('')
+
+            with ui.column():
+                ui.label('Select Output Format:').style(
+                    "text-decoration: underline;")
+
+                form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
+                                                    ",": "Comma-delimited [,]",
+                                                    ";": "Semicolon-delimited [;]"},
+                                                   value="\t",
+                                                   label="Separator character") \
+                    .style("width: 90%")
+
+                form_values['select3'] = ui.select({"NA": "NA",
+                                                    "\t": "Tab [\\t]",
+                                                    "": "Don't print anything"},
+                                                   value="NA",
+                                                   label="Placeholder"
+                                                         " for unavailable "
+                                                         "fields") \
+                    .style("width: 90%")
+
+        with ui.column():
+
+            form_values['mode'] = "convert"
+
+            # ui.image('https://imgs.xkcd.com/comics/standards.png')
+
+            form_values['textfield'] = ui.input(
+                label='Please paste a list of circRNA IDs, one per line:',
+                placeholder='start typing',
+                on_change=lambda e: form_values['submit_button'].
+                set_text(check_text_field_input(upload_data=None))). \
+                props('type=textarea rows=30').style("width: 60%; ")
+
+            form_values['or'] = ui.label('- OR -')
+
+            form_values['upload'] = ui.upload(
+                label="1) Click + to select file "
+                      "2) upload file via button to the right "
+                      "3) press 'convert circRNA IDs' button",
+                on_upload=lambda e: file_upload_handler(e.files[0])).style(
+                "width: 60%")
+
+            with ui.row():
+                form_values['submit_button'] = \
+                    ui.button('Convert circRNA IDs', on_click=lambda:
+                    ui.open(display_results_page)).props("disabled=true")
+
+                form_values['example_button'] = \
+                    ui.button('Load example data', on_click=lambda:
+                    load_example_data())
+
+            form_values['circrna_found'] = ui.linear_progress(show_value=False,
+                                                              value=0).style(
+                "width: 60%; ")
+
+            form_values['circrna_found'].set_visibility(False)
+            form_values['submit_notification'] = ui.label('')
+
+    ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4; ')
+
+
+
+    add_footer_and_right_drawer()
+
 
 
 # main landing page / also works as start page for converter function
@@ -702,7 +854,7 @@ async def display_results_page():
 
 
 @ui.page('/about')
-async def landing_page():
+async def about_page():
     add_head_html()
     add_header()
 
@@ -712,14 +864,29 @@ async def landing_page():
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
-        ui.image(
-            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+        generate_logo()
+
+    # with ui.column().classes('text-white max-w-4xl'):
+    #
+    #     with ui.column().classes('gap-2 bold-links arrow-links text-lg'):
+    #         ui.markdown(
+    #             'NiceGUI handles all the web development details for you. '
+    #             'So you can focus on writing Python code. '
+    #             'Anything from short scripts and dashboards to full robotics projects, IoT solutions, '
+    #             'smart home automations and machine learning projects can benefit from having all code in one place.'
+    #         )
+    #         ui.markdown(
+    #             'Available as '
+    #             '[PyPI package](https://pypi.org/project/nicegui/), '
+    #             '[Docker image](https://hub.docker.com/r/zauberzeug/nicegui) and on '
+    #             '[GitHub](https://github.com/zauberzeug/nicegui).')
+    # demo_card.create()
 
     add_footer_and_right_drawer()
 
 
 @ui.page('/rest')
-async def landing_page():
+async def rest_page():
     add_head_html()
     add_header()
 
@@ -729,25 +896,85 @@ async def landing_page():
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
-        ui.image(
-            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+
+        generate_logo()
 
     add_footer_and_right_drawer()
 
 
+@app.exception_handler(404)
+async def exception_handler_404(request: Request, exception: Exception) -> Response:
+    with Client(ui.page('')) as client:
+        with ui.column().\
+                style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+            ui.label('Error 404').\
+                style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+            ui.label('Page not found.').\
+                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html("<a href=\"/\"><img src=\"static/error.png\"></a>").style(
+                'text-align: center; padding:10px;')
+            ui.label('Please contact the server administrator at '+
+                     util.support_email+' for additional support.').\
+                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.link('Click here to report an issue on GitHub.', util.support_web).\
+                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+    return client.build_response(request, 404)
+
+
+@app.exception_handler(500)
+async def exception_handler_500(request: Request, exception: Exception) -> Response:
+    with Client(ui.page('')) as client:
+        with ui.column().\
+                style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+            ui.label('Error 500').\
+                style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+            ui.label('Internal server error.').\
+                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html("<a href=\"/\"><img src=\"static/error.png\"></a>").style(
+                'text-align: center; padding:10px;')
+            ui.label('Please contact the server administrator at '+
+                     util.support_email+' for additional support.').\
+                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.link('Click here to report an issue on GitHub.', util.support_web).\
+                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+    return client.build_response(request, 404)
+
+
 @ui.page('/cli')
-async def landing_page():
+async def cli_page():
     add_head_html()
     add_header()
 
-    ui.html('<strong>CLI page</strong>'
-            '<br/><a href=\"/\">Returning to main page</a>'
-            ).style('text-align:center;')
+    # ui.html('<strong>CLI page</strong>'
+    #         '<br/><a href=\"/\">Returning to main page</a>'
+    #         ).style('text-align:center;')
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
-        ui.image(
-            'https://docs.circ.tools/en/latest/_static/circtools_150px.png')
+
+        generate_logo()
+
+    add_footer_and_right_drawer()
+
+
+@ui.page('/news')
+async def news_page():
+    add_head_html()
+    add_header()
+
+    ui.html('<strong>News page</strong>'
+            '<br/><a href=\"/\">Returning to main page</a>'
+            ).style('text-align:center;')
+
+    with ui.card_section():
+        ui.label('Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...')
+        ui.label('Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...')
+
+
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4; '):
+
+        generate_logo()
 
     add_footer_and_right_drawer()
 
