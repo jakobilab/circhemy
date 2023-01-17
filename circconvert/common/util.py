@@ -31,6 +31,8 @@ class Util(object):
                   program_name +\
                   "/issues/new"
 
+    news_url = "https://redmine.jakobilab.org/projects/circhemy/" \
+               "news.atom?key=c616b9fb231445ac4ca65d94db1d3207382798e9"
 
     database_location = "../data/circconvert.sqlite3"
 

@@ -18,22 +18,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# misc web functionality
 from pathlib import Path
 from typing import List, Any
 from uuid import uuid4
 
+# models for REST API endpoints
 from pydantic import BaseModel, validator
 from pygments.formatters import HtmlFormatter
 
+# regex for circRNA parsing
 import re
 
 # own util functions
 import common.util
 
-# nicegui and web imports
+# core nicegui and web imports
 from fastapi import Request, Response
 from nicegui import Client, app, ui
 from web import svg
+
+# imports for parsing the Redmine news feed
+import feedparser
+from dateutil import tz
+
+import time
+import textwrap
+from subprocess import check_output
+from dateutil.parser import parse
+
+import ssl
+# if hasattr(ssl, '_create_unverified_context'):
+#     ssl._create_default_https_context = ssl._create_unverified_context
+
+from io import StringIO
+from html.parser import HTMLParser
 
 # create util instance for the web app
 util = common.util.Util
@@ -62,6 +81,27 @@ ui_convert_form_values['chart'], ui_convert_form_values['dbsize'],\
 ui.run(title=util.program_name, show=False)
 
 # util functions
+
+
+class RedmineParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs= True
+        self.text = StringIO()
+
+    def handle_data(self, d):
+        self.text.write(d)
+
+    def get_data(self):
+        return self.text.getvalue()
+
+
+def redmine_remove_tags(html):
+    s = RedmineParser()
+    s.feed(html)
+    return s.get_data()
 
 
 def check_circrna_input_regex(strg, search=re.compile(r'[^A-Za-z0-9_\-|:\n\t]').search):
@@ -929,13 +969,29 @@ async def page_news():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html('<strong>News page</strong>'
-            '<br/><a href=\"/\">Returning to main page</a>'
-            ).style('text-align:center;')
+    ui.html("<img style='text-align: center' src=\"static/news_small.png\">").style(
+        'text-align: center; padding:10px;')
 
-    with ui.card_section():
-        ui.label('Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...')
-        ui.label('Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...')
+    # get feed
+    d = feedparser.parse(util.news_url)
+
+    max_posts = 20
+
+    news_count = 1
+
+    for post in d.entries:
+        date_obj = parse(post.updated)
+
+        with ui.card().style('width: 100%;') as card:
+            ui.html("<strong>"+date_obj.astimezone(tz.tzlocal()).strftime(
+            "%d %B, %Y")+"</strong>")
+            ui.html(post.title).style('font-size: 1.25rem; line-height: 1.75rem;')
+            with ui.card_section():
+                ui.html(post.description)
+
+        news_count += 1
+        if news_count > max_posts:
+            break
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
@@ -943,6 +999,7 @@ async def page_news():
         ui_layout_generate_logo()
 
     ui_layout_add_footer_and_right_drawer()
+
 
 # error pages for error 404 and 500
 
