@@ -23,7 +23,14 @@ class Util(object):
 
     database_version = "DB-0.0.2-dev"
 
-    program_name = "circconvert"
+    program_name = "circhemy"
+
+    support_email = program_name+"@jakobilab.org"
+
+    support_web = "https://github.com/jakobilab/circconvert/ "+\
+                  program_name +\
+                  "/issues/new"
+
 
     database_location = "../data/circconvert.sqlite3"
 
