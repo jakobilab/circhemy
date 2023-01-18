@@ -659,6 +659,15 @@ async def page_application_convert():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
+    with ui.card().style('width: 100%;') as card:
+        ui.html("<strong>CircRNA ID conversion made easy</strong>")
+        with ui.card_section():
+            ui.markdown("""
+Multiple databases gathered hundreds of thousands of circRNAs, however, most 
+databases employ their own naming scheme, making it harder and harder to keep 
+track of known circRNAs and their identifiers.
+        """)
+
     ui_convert_form_values['mode'] = "convert"
 
     # ui.image('https://imgs.xkcd.com/comics/standards.png')
@@ -903,29 +912,70 @@ async def page_about():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html('<strong>About page</strong>'
-            '<br/><a href=\"/\">Returning to main page</a>'
-            ).style('text-align:center;')
+    ui_layout_add_head_html()
+    ui_layout_add_header()
+
+    ui.html("About "+util.program_name).style(
+        'text-align: center; font-size: 26pt;')
+
+    with ui.card().style('width: 100%;') as card:
+        ui.html("Circular RNAs").style('text-align: center; font-size: 16pt;')
+        with ui.card_section():
+            ui.markdown("""
+Circular RNAs (circRNAs) originate through back-splicing events from linear 
+primary transcripts, are resistant to exonucleases, typically not 
+polyadenylated, and have been shown to be highly specific for cell type and 
+developmental stage. 
+
+The prediction of circular RNAs is a multi-stage bioinformatics process starting 
+with raw sequencing data and usually ending with a list of potential circRNA 
+candidates which, depending on tissue and condition may contain hundreds to 
+thousands of potential circRNAs. While there are a number of tools for the 
+prediction process (e.g. circtools developed by our group) a unified naming 
+convention for circRNA is not available.
+
+Multiple databases gathered hundreds of thousands of circRNAs, however, most 
+databases employ their own naming scheme, making it harder and harder to keep 
+track of known circRNAs and their identifiers.
+                """)
+
+    with ui.card().style('width: 100%;') as card:
+        ui.html("Circhemy").style('text-align: center; font-size: 16pt;')
+        with ui.card_section():
+            ui.markdown("""
+We developed circhemy, a modular, Python3-based framework for circRNA ID 
+conversion that unifies several functionalities in a single Python package. 
+Three different routes are implemented within package to access more than 2 
+million circRNA IDs:
+
+Streamlined CLI application for direct access to the prepackaged local SQLite3 
+database User-friendly Web frontend at circhemy.jakobilab.org A public REST API 
+that enables direct access to the most recent ID database from HPC systems using 
+curl or similar tools
+
+Circhemy includes two different modes of action: convert and query. Convert 
+allows the user to convert from one type of circRNA ID to a wide variety of 
+other database identifiers, while query allows users to run direct queries on 
+the circRNA database to extract circRNAs fulfilling a user-defined set of 
+constraints.
+            """)
+
+    with ui.card().style('width: 100%;') as card:
+        ui.html("Contact").style('text-align: center; font-size: 16pt;')
+        with ui.card_section():
+            ui.markdown("""
+Circhemy is developed at the **[Jakobi Lab](https://jakobilab.org)**, part of 
+the **[Translational Cardiovascular Research Center 
+(TCRC)](https://phoenixmed.arizona.edu/tcrc)** in the Department of Internal 
+Medicine at **[The University of Arizona College of Medicine
+ – Phoenix](https://phoenixmed.arizona.edu/)**.
+
+Contact: **<circhemy@jakobilab.org>**
+    """)
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
         ui_layout_generate_logo()
-
-    # with ui.column().classes('text-white max-w-4xl'):
-    #
-    #     with ui.column().classes('gap-2 bold-links arrow-links text-lg'):
-    #         ui.markdown(
-    #             'NiceGUI handles all the web development details for you. '
-    #             'So you can focus on writing Python code. '
-    #             'Anything from short scripts and dashboards to full robotics projects, IoT solutions, '
-    #             'smart home automations and machine learning projects can benefit from having all code in one place.'
-    #         )
-    #         ui.markdown(
-    #             'Available as '
-    #             '[PyPI package](https://pypi.org/project/nicegui/), '
-    #             '[Docker image](https://hub.docker.com/r/zauberzeug/nicegui) and on '
-    #             '[GitHub](https://github.com/zauberzeug/nicegui).')
-    # demo_card.create()
 
     ui_layout_add_footer_and_right_drawer()
 
@@ -952,9 +1002,69 @@ async def page_cli():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    # ui.html('<strong>CLI page</strong>'
-    #         '<br/><a href=\"/\">Returning to main page</a>'
-    #         ).style('text-align:center;')
+    ui.html("Command Line Interface (CLI)").style(
+        'text-align: center; font-size: 26pt;')
+
+    with ui.card().style('width: 100%;') as card:
+        ui.html("Setup").style('text-align: center; font-size: 16pt;')
+        with ui.card_section():
+            ui.markdown("""
+The circhemy package is written in Python3 (>=3.7) and consists of two 
+core modules, namely convert and query. The command line version requires 
+only one external dependency, ``sqlite3``, for access to the internal SQLite3
+database with circRNA ID data
+
+Installation is managed through ``pip3 install circhemy`` or ``python3 setup.py
+install`` when installed from the cloned GitHub repository. No sudo access is
+required if the installation is executed with ``--user`` which will install the
+package in a user-writeable folder. The binaries should be installed
+to ``/home/$user/.local/bin/`` in case of Debian-based systems.
+
+circhemy was developed and tested on Debian Buster, but should run with
+any other distribution.
+
+The installation requires running python on the command line:
+
+    git clone https://github.com/dieterich-lab/circtools.git
+    cd circtools
+    python3 setup.py install --verbose --user
+""")
+
+    with ui.card().style('width: 100%;') as card:
+        ui.html("Quick Start").style('text-align: center; font-size: 16pt;')
+        with ui.card_section():
+            ui.markdown("**Convert module**")
+            ui.markdown("The convert module is able to convert from a range of "
+                        "input circRNA ID into different one or more database"
+                        "identifiers.")
+            ui.markdown("""
+Example: Convert a list of circatlas IDs read via STDIN from file `input.csv` 
+into circpedia2 IDs, but also output circatlas IDs, while writing the output to
+`/tmp/output.csv`:
+
+``cat input.csv | circhemy convert  -q STDIN -i circatlas -o circpedia2 
+circatlas -O /tmp/output.csv``""")
+
+        with ui.card_section():
+            ui.markdown("**Query module**")
+            ui.markdown("The query module is able to retrieve circRNA IDs from "
+                        "the internal database that fulfil a set of user-defined"
+                        " constraints.")
+            ui.markdown("""
+Example: Retrieve a list of circbase and circatlas circRNA IDs that are located
+on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
+the rn6 genome build.
+
+``circconvert query -o circbase circatlas -C chr3 
+-s rattus_norvegicus -g rn6``
+""")
+
+
+    with ui.card().style('width: 100%;') as card:
+        ui.html("Documentation").style('text-align: center; font-size: 16pt;')
+        with ui.card_section():
+            ui.markdown("The full documentation is available on "
+                        "***[GitHub](https://)***.")
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4; '):
