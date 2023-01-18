@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser(
     fromfile_prefix_chars="@",
     description="Convert circular RNA identifiers from different databases.\n"
                 "\n"
-                "Version " + util.version + "\n"
+                "Version " + util.software_version + "\n"
                 "\n"
                 "https://github.com/jakobilab/TOOLNAME\n"
                 "https://jakobilab.org\n"
@@ -48,7 +48,7 @@ parser.add_argument("command", help="Command to run")
 parser.add_argument("-V",
                     "--version",
                     action="version",
-                    version=util.version
+                    version=util.software_version
                     )
 
 # parse_args defaults to [1:] for args, but you need to
