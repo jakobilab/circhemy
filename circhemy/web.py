@@ -1025,7 +1025,7 @@ Example: Retrieve a list of circbase and circatlas circRNA IDs that are located
 on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
 the rn6 genome build.
 
-``circconvert query -o circbase circatlas -C chr3 
+``circhemy query -o circbase circatlas -C chr3 
 -s rattus_norvegicus -g rn6``
         """)
 
@@ -1100,7 +1100,7 @@ Example: Retrieve a list of circbase and circatlas circRNA IDs that are located
 on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
 the rn6 genome build.
 
-``circconvert query -o circbase circatlas -C chr3 
+``circhemy query -o circbase circatlas -C chr3 
 -s rattus_norvegicus -g rn6``
 """)
 
