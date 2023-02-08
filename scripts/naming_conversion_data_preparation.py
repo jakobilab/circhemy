@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
 import re
 import gzip
 import os
@@ -28,20 +29,76 @@ import pysam
 from pybedtools import BedTool
 
 gtf_dict = {
-    "homo_sapiens": "https://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.108.gtf.gz",
-    "mus_musculus": "https://ftp.ensembl.org/pub/current_gtf/mus_musculus/Mus_musculus.GRCm39.108.gtf.gz",
-    # "rattus_norvegicus": "https://ftp.ensembl.org/pub/release-90/gtf/rattus_norvegicus/Rattus_norvegicus.Rnor_6.0.90.gtf.gz"
-    "rattus_norvegicus": "/mnt/big_data/genomes/Rnor_6_0_96/Rnor_6.0.96.gtf.gz"
+    "homo_sapiens": "https://ftp.ensembl.org/pub/release-90/gtf/homo_sapiens/Homo_sapiens.GRCh38.90.gtf.gz",
+    "mus_musculus": "https://ftp.ensembl.org/pub/release-90/gtf/mus_musculus/Mus_musculus.GRCm39.90.gtf.gz",
+    "rattus_norvegicus": "https://ftp.ensembl.org/pub/release-90/gtf/rattus_norvegicus/Rattus_norvegicus.Rnor_6.0.90.gtf.gz"
     }
 
 genome_dict = {
-    "homo_sapiens": "https://ftp.ensembl.org/pub/current_fasta/homo_sapiens/Homo_sapiens.GRCh38.108.gtf.gz",
-    "mus_musculus": "https://ftp.ensembl.org/pub/current_gtf/mus_musculus/Mus_musculus.GRCm39.108.gtf.gz",
-    # "rattus_norvegicus": "https://ftp.ensembl.org/pub/release-90/gtf/rattus_norvegicus/Rattus_norvegicus.Rnor_6.0.90.gtf.gz"
-    "rattus_norvegicus": "/mnt/big_data/genomes/Rnor_6_0_96/Rnor_6_0_96.fa"
+    "homo_sapiens": "https://ftp.ensembl.org/pub/release-90/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz",
+    "mus_musculus": "https://ftp.ensembl.org/pub/release-90/fasta/mus_musculus/dna/Mus_musculus.GRCm39.dna.primary_assembly.fa.gz",
+    "rattus_norvegicus": "https://ftp.ensembl.org/pub/release-90/fasta/rattus_norvegicus/dna/Rattus_norvegicus.Rnor_6.0.dna.toplevel.fa.gz"
     }
 
 line_dict = {}
+
+parser = argparse.ArgumentParser(
+    prog="naming_conversion_data_preparation.py",
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    fromfile_prefix_chars="@",
+    description="Prepares external ENSEMBL data sources for conversion of "
+                "CircAtlas circRNA IDs to the new naming scheme proposed in "
+                "Chen et al. 2023.\n"
+                "\n"
+                "Version 0.0.2\n"
+                "\n"
+                "https://github.com/jakobilab/circhemy\n"
+                "https://jakobilab.org\n"
+                "tjakobi@arizona.edu",
+
+    usage=""" naming_conversion_data_preparation [<args>]"""
+)
+
+group = parser.add_argument_group("output parameters")
+
+group.add_argument("-o",
+                   "--output",
+                   dest="output_directory",
+                   default="./",
+                   help="The output folder for files created the script",
+                   required=True
+                   )
+
+group.add_argument("-s",
+                   "--species",
+                   dest="species",
+                   help="Species to process: "
+                        "mus_musculus, homo_sapiens, or rattus_norvegicus",
+                   choices=("mus_musculus", "homo_sapiens", "rattus_norvegicus"),
+                   default=["mus_musculus", "homo_sapiens", "rattus_norvegicus"]
+)
+
+args = parser.parse_args()
+
+
+def download_data(file_url):
+
+    # get base file name
+    file_name = file_url.split("/")[-1]
+
+    file_full_path = args.output_directory + "/" + file_name
+
+    # check if already downloaded (check unzipped file)
+    if os.path.isfile(file_full_path.replace(".gz", "")):
+        print("Found required file " + file_full_path.replace(".gz", ""))
+    else:
+        print("Downloading " + file_url)
+        urllib.request.urlretrieve(file_url, file_full_path)
+        print("Unpacking")
+        os.system("gzip -d " + file_full_path)
+        print("Done")
+
+    return file_full_path.replace(".gz", "")
 
 
 def process_fasta(bed_file, genome):
@@ -51,7 +108,7 @@ def process_fasta(bed_file, genome):
     if not os.path.isfile(genome+""):
         pysam.index(genome)
 
-    os.system("rm " + bed_file + ".fasta")
+    os.system("rm -f " + bed_file + ".fasta")
 
     o = open(bed_file + ".fasta", "a")
 
@@ -73,10 +130,10 @@ def process_fasta(bed_file, genome):
 
     o.close()
 
-    return
+    return bed_file + ".fasta"
 
 
-def process_gzipped_gtf(uri):
+def process_gzipped_gtf(gzipped_gtf):
 
     prev_gene = ""
     exon_num = 1
@@ -84,19 +141,13 @@ def process_gzipped_gtf(uri):
     three_num = 1
     line_num = 1
 
-    # TODO: set up download
+    os.system("rm -f " + gzipped_gtf + ".bed")
+    os.system("rm -f " + gzipped_gtf + "_exon.bed")
+    os.system("rm -f " + gzipped_gtf + "_gene.bed")
+    os.system("rm -f " + gzipped_gtf + "_final.bed")
 
-    # print("Downloading "+uri)
-    # file_name, headers = urllib.request.urlretrieve(uri)
-    # print("Done")
-
-    os.system("rm "+uri+".bed")
-    os.system("rm "+uri + "_exon.bed")
-    os.system("rm "+uri + "_gene.bed")
-    os.system("rm "+uri + "_final.bed")
-
-    exon_output_file = open(uri + "_exon.bed", "a")
-    gene_output_file = open(uri + "_gene.bed", "a")
+    exon_output_file = open(gzipped_gtf + "_exon.bed", "a")
+    gene_output_file = open(gzipped_gtf + "_gene.bed", "a")
 
     # TODO: remove temp files
 
@@ -110,36 +161,34 @@ def process_gzipped_gtf(uri):
     # also remove comment lines from gtf
     # will only work with unix/linux, not windows
 
-    # os.system("zcat " +
-    #           uri +
-    #           " | grep -v \"#!\" " +
-    #           "| awk '{if ($7==\"+\"){print}}'" +
-    #           "|  sort -k1,1 -k4,4n | gzip -c > " + uri +
-    #           ".plus")
-    #
-    # os.system("zcat " +
-    #           uri +
-    #           " | grep -v \"#!\" " +
-    #           "| awk '{if ($7==\"-\"){print}}'" +
-    #           "|  sort -k1,1 -k4,4rn | gzip -c > " + uri +
-    #           ".minus")
+    os.system("cat " +
+              gzipped_gtf +
+              " | grep -v \"#!\" " +
+              "| awk '{if ($7==\"+\"){print}}'" +
+              "|  sort -k1,1 -k4,4n > " + gzipped_gtf +
+              ".plus")
 
-    # os.system("rm "+uri)
+    os.system("cat " +
+              gzipped_gtf +
+              " | grep -v \"#!\" " +
+              "| awk '{if ($7==\"-\"){print}}'" +
+              "|  sort -k1,1 -k4,4rn > " + gzipped_gtf +
+              ".minus")
 
-    todo_list = [uri + ".plus", uri + ".minus"]
+    todo_list = [gzipped_gtf + ".plus", gzipped_gtf + ".minus"]
 
     for gtf_file in todo_list:
 
         print("Processing GTF "+gtf_file)
 
-        with gzip.open(gtf_file, 'rb') as file:
+        with open(gtf_file, 'r') as file:
             for line in file:
                 print("processed " + str(line_num) + " lines",  end="\r")
                 line_num = line_num + 1
 
                 # split by whitespace, not only tab to directly get
                 # access to the description fields
-                index = re.split('\s', line.decode('utf-8'))
+                index = re.split('\s', line)
 
                 # only exon lines
                 # make sure we're skipping the header
@@ -207,7 +256,6 @@ def process_gzipped_gtf(uri):
                     gene = gene.replace("\"", "")
                     gene = gene.replace(";", "")
                     gene = gene[0:12]
-
 
                     idx = "!".join([chr, start, stop])
 
@@ -330,6 +378,9 @@ def process_gzipped_gtf(uri):
 
         line_num = 1
 
+    print("")
+    print("Done")
+
     # close files, done with first step
     exon_output_file.close()
     gene_output_file.close()
@@ -337,14 +388,14 @@ def process_gzipped_gtf(uri):
     # now, lets build an intron list by removing exons from the genes
     # using bedtools subtract
 
-    exons = BedTool(uri + "_exon.bed")
-    genes = BedTool(uri + "_gene.bed")
+    exons = BedTool(gzipped_gtf + "_exon.bed")
+    genes = BedTool(gzipped_gtf + "_gene.bed")
 
     print("Extracting introns")
 
     introns = str(genes.subtract(exons, s=True))
 
-    final_output_file = open(uri + "_final.bed", "a")
+    final_output_file = open(gzipped_gtf + "_final.bed", "a")
 
     final_output_file.write(str(exons))
     final_output_file.write(str(genes))
@@ -369,14 +420,41 @@ def process_gzipped_gtf(uri):
 
         final_output_file.write(output + "\n")
 
-    return uri + "_final.bed"
-
-process_gzipped_gtf("/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz")
-process_fasta("/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed",
-              "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38_90.fa")
+    return gzipped_gtf + "_final.bed"
 
 
+def initialize_blast_database(fasta_file):
+
+    print("Initializing BLAST database")
+
+    # create BLAST database
+    # use hash_index , DB version 5 and parse-seqid to allow
+    # targeted search using the -seqidlist parameter
+    os.system("makeblastdb -in "
+              + fasta_file +
+              " -dbtype nucl -hash_index -blastdb_version 5 -parse_seqids")
 
 
+def process_species(species):
 
+    print("Working on species "+species)
+
+    # download data
+    gtf_file = download_data(gtf_dict[species])
+    genome_file = download_data(genome_dict[species])
+
+    # preprocess GTF file
+    bed_file = process_gzipped_gtf(gtf_file)
+
+    # process FASTA file, generate input for BLAST database
+    fasta_file = process_fasta(bed_file, genome_file)
+
+    # generate BLAST database
+    initialize_blast_database(fasta_file)
+
+
+# main program loop
+
+for item in args.species:
+    process_species(item)
 
