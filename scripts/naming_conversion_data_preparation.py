@@ -189,6 +189,13 @@ def process_gzipped_gtf(gzipped_gtf):
                 # access to the description fields
                 index = re.split('\s', line)
 
+                # skip non-standard chromosomes for now
+                # too long chromosome names will interfere with
+                # BLAST DB creation as only 50 characters are allowed for
+                # the name tag
+                if len(index[0]) > 6:
+                    continue
+
                 # only exon lines
                 # make sure we're skipping the header
                 if index[2] == "exon":
@@ -360,7 +367,7 @@ def process_gzipped_gtf(gzipped_gtf):
 
                     gene = gene.replace("\"", "")
                     gene = gene.replace(";", "")
-                    gene = gene[0:12]
+                    gene = gene[0:10]
 
                     idx = "!".join([chr, start, stop])
 
