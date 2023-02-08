@@ -25,8 +25,6 @@ from operator import itemgetter
 import io
 
 import pysam
-
-import pybedtools
 from pybedtools import BedTool
 
 gtf_dict = {
@@ -44,8 +42,6 @@ genome_dict = {
     }
 
 line_dict = {}
-
-bad_gene = {"DTX2P1-UPK3BP1-PMS2P11"}
 
 
 def process_fasta(bed_file, genome):
@@ -166,7 +162,6 @@ def process_gzipped_gtf(uri):
                     # still name gene, increase exon number
                     # but only if we did not see this exon yet!
                     if idx not in line_dict and prev_gene == gene:
-                        # print("okay")
                         exon_num = exon_num + 1
                         line_dict[idx] = 1
                         name = "!".join([gene, gene_id, idx, "E", str(exon_num)])
@@ -222,7 +217,6 @@ def process_gzipped_gtf(uri):
 
                         name = "!".join([gene, gene_id, idx,  "U3", str(three_num)])
 
-                        # print("okay")
                         three_num = three_num + 1
                         line_dict[idx] = 1
 
@@ -267,7 +261,6 @@ def process_gzipped_gtf(uri):
                     gene = gene[0:12]
                     gene_id = gene_id[-6:]
 
-
                     idx = "!".join([chr, start, stop])
 
                     # still name gene, increase exon number
@@ -288,7 +281,6 @@ def process_gzipped_gtf(uri):
                                             strand])
 
                         exon_output_file.write(output + "\n")
-
 
                     # new gene, reset exon numbers and gene name
                     elif idx not in line_dict and prev_gene != gene:
@@ -322,12 +314,6 @@ def process_gzipped_gtf(uri):
                     gene = gene.replace("\"", "")
                     gene = gene.replace(";", "")
                     gene = gene[0:12]
-                    #
-                    # type = type.replace("\"", "")
-                    # type = type.replace(";", "")
-                    # type = type.replace("protein_coding", "coding")
-                    # type = type[0:6]
-
 
                     idx = "!".join([chr, start, stop])
 
@@ -383,15 +369,11 @@ def process_gzipped_gtf(uri):
 
         final_output_file.write(output + "\n")
 
-    #os.system("rm "+uri+".fixed")
-
     return uri + "_final.bed"
 
-#process_gzipped_gtf(gtf_dict['rattus_norvegicus'])
-
-# process_fasta("/mnt/big_data/genomes/", "/mnt/big_data/genomes/Rnor_6_0_96/Rnor_6_0_96.fa")
 process_gzipped_gtf("/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz")
-process_fasta("/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed", "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38_90.fa")
+process_fasta("/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed",
+              "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38_90.fa")
 
 
 
