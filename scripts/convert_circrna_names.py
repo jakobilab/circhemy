@@ -22,6 +22,7 @@
 # Other code authored by Tobias Jakobi
 
 import multiprocessing as mp
+import sys
 import tempfile
 
 import io
@@ -781,6 +782,9 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
                                        "coordinates": str(circrna_coordinates),
                                        "source": "BLAST"}
 
+            sys.stdout.write("\r"+str(len(result_dict)) + " circRNAs processed")
+            sys.stdout.flush()
+
 
 def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, result_dict=None, bedfile=None):
 
@@ -1079,6 +1083,9 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                                     "coordinates": coordinates,
                                     "source": "intersect"}
 
+            sys.stdout.write("\r"+str(len(result_dict)) + " circRNAs processed")
+            sys.stdout.flush()
+
 
 parser = argparse.ArgumentParser(
     prog="convert_circrna_names",
@@ -1218,6 +1225,7 @@ if __name__ == "__main__":
 
             # setup next chunk
             cursor = end + 1
+
 
         # close and wait for pool to finish
         pool.close()
