@@ -1250,7 +1250,8 @@ if __name__ == "__main__":
                                start=0,
                                stop=total_circrna_count,
                                coordinate_dict=coordinate_dict,
-                               result_dict=result_dict)
+                               result_dict=result_dict,
+                               bedfile=args.bedfile)
 
     # determine if it needs to be split
     if total_circrna_count > line_chunk_size:
