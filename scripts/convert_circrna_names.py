@@ -46,19 +46,6 @@ def run_blast_query(database,
                     "-out", blast_output_file])
     return
 
-
-def make_blast_db(bedfile):
-
-    # create BLAST database
-    # use hash_index , DB version 5 and parse-seqid to allow
-    # targeted search using the -seqidlist parameter
-    os.system("makeblastdb -in "
-              + bedfile +
-              " -dbtype nucl -hash_index -blastdb_version 5 -parse_seqid")
-
-    return "database"
-
-
 def get_circrna_boundaries_from_bedfile(bedfile):
 
     lines = bedfile.split("\n")
