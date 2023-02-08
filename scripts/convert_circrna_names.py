@@ -681,7 +681,7 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
 
             limit_bed_db.flush()
 
-            debug_bed_file = open( debug_file_name, "r+")
+            debug_bed_file = open(debug_file_name, "w")
 
             # this is our second BED file just containing the circRNA
             # coordinates + 1000 flanking BP as buffer
