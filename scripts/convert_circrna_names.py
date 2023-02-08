@@ -1207,7 +1207,7 @@ if __name__ == "__main__":
 
             # add chunk to process pool, save reference to get results
             proc = pool.apply_async(process_circrna_file,
-                                    args=[args.circatlas,
+                                    args=[args.circatlas_sequences,
                                           cursor,
                                           end,
                                           coordinate_dict,
@@ -1224,7 +1224,7 @@ if __name__ == "__main__":
         pool.join()
 
     else:
-        process_circrna_file(filename=args.circatlas,
+        process_circrna_file(filename=args.circatlas_sequences,
                              start=0,
                              stop=total_circrna_count,
                              coordinate_dict=coordinate_dict,
