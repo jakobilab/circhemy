@@ -354,7 +354,7 @@ def process_gzipped_gtf(gzipped_gtf):
 
                         exon_output_file.write(output + "\n")
 
-                elif index[2] == "gene" and 17 in index:
+                elif index[2] == "gene" and len(index) >= 18:
 
                     # get desired fields
                     chr, start, stop, strand, gene_id, gene, type = \
