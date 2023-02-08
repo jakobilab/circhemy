@@ -757,8 +757,6 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
                                            intersect_bed_file=result,
                                            bed_strand=bed_strand)
 
-            result_dict[circrna_id] = new_id
-
             circrna_line = "\t".join([circ_chr,
                                              str(circ_start),
                                              str(circ_stop),
