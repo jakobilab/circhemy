@@ -16,7 +16,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 # The code for the multiprocessing text part is taken from
 # https://stackoverflow.com/a/12293094
 
@@ -28,9 +27,11 @@ import tempfile
 import io
 import os
 import re
+import argparse
 
 from pybedtools import BedTool
 import subprocess
+
 
 def run_blast_query(database,
                     fasta_query_file,
@@ -45,6 +46,7 @@ def run_blast_query(database,
                     "-seqidlist", limit_bsl_file,
                     "-out", blast_output_file])
     return
+
 
 def get_circrna_boundaries_from_bedfile(bedfile):
 
@@ -97,8 +99,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
             if item_type == "U5" or item_type == "U3" or item_type == "G":
                 continue
 
-            # print(line)
-
             if line[1] in item_dict and item_dict[line[1]] >= float(line[9]):
                 continue
             else:
@@ -112,10 +112,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
             # get start and stop ane make INTs
             circ_start = int(circ_start)
             circ_stop = int(circ_stop)
-
-            # print("startstop")
-            # print(str(circ_start))
-            # print(str(circ_stop))
 
             # we need the strand for orientation
             circ_strand = bed_strand
@@ -190,14 +186,11 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                                                            str(circ_item_stop),
                                                            line[1]]
                                                           ) + "\n"
-            # print(bedtools_string)
 
     # we are done with BLAST processing
 
     # now assign the exon numbers and magically discover too short and
     # too long exons
-
-    # print(exon_dict)
 
     for exon in exon_dict:
 
@@ -260,16 +253,11 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                     bedtools_string = bedtools_string.replace(exon_id,
                                                               replacement)
 
-    # if bedtools_string == "":
-    #     print("no blast results")
-
     # make new bedtools object
     bed_obj = BedTool(bedtools_string, from_string=True)
 
     # sort by coordinates
     bed_obj = bed_obj.sort()
-
-    #print(bed_obj)
 
     # merge contained exons, i.e. if exon 5 is 500 bp and exon 3 if 100 bp
     # completely within exon 5 only keep exon 5
@@ -382,25 +370,13 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
     # we create another intersect with the exact start/stop circRNA position
     # and see which exons fits best
 
-    # print(return_list)
-    # print("blu: " + str(return_list))
-
     start_fit = 0
     stop_fit = 0
 
     changed_start = False
     changed_stop = False
 
-
     if max(distance_watcher_start, distance_watcher_stop) > 100:
-
-        # print("refining")
-
-        # if distance_watcher_start > 100:
-
-             # print("start exon error")
-        # if distance_watcher_stop > 100:
-             # print("stop exon error")
 
         bedtools_string = "\t".join([circ_chr,
                                      str(circ_start - 1000),
@@ -409,11 +385,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
         circrna_junction = BedTool(bedtools_string, from_string=True)
         fix = intersect_bed_file.intersect(circrna_junction)
-
-        # print(bedtools_string)
-        # print(intersect_bed_file)
-
-        # print(fix)
 
         start_exon_dist_dict = {}
         stop_exon_dist_dict = {}
@@ -442,10 +413,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                     start_exon = exon_num
                 else:
                     start_exon_dist_dict[circ_start-fix_start] = exon_num
-                    # print("circ")
-                    # print(circ_start)
-                    # print("fix")
-                    # print(fix_start)
 
             # look for stop
             if distance_watcher_stop > 100:
@@ -458,9 +425,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
         tmp_exon = -1
         if distance_watcher_stop > 100 and len(stop_exon_dist_dict.keys()) > 0 and stop_exon == 0:
             fit = int(min(list(stop_exon_dist_dict.keys()), key=abs))
-
-            # print("stop best fit: " + str(fit) + "exon " +
-            #       stop_exon_dist_dict[fit])
 
             tmp_exon = stop_exon_dist_dict[fit]
 
@@ -477,14 +441,10 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
         if distance_watcher_start > 100 and len(start_exon_dist_dict.keys()) > 0 and start_exon == 0:
 
             fit = int(min(list(start_exon_dist_dict.keys()), key=abs))
-            # print("start best fit: " + str(fit) + "exon " +
-            #       start_exon_dist_dict[fit])
 
             # we have the same exon, have
             # to add the modifier to the same string
             if start_exon_dist_dict[fit] != tmp_exon:
-
-                # print(fit)
 
                 if fit > 0 and bed_line[5] == "-":
                     start_exon = start_exon_dist_dict[fit] + "L[" + str(abs(fit)) + "]"
@@ -510,9 +470,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
             start_fit = fit
 
-        # print(start_exon)
-        # print(stop_exon)
-
         # only remove start/stop part (i.e. the > 100bp error)
         # the other side might be okay ith a small error, e.g. 10bp,
         # so we do not want to remove that
@@ -520,7 +477,8 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
         work_exon = ""
 
         if distance_watcher_start > 100 and start_exon != 0:
-            work_exon = return_list[0] # first exon
+            work_exon = return_list[0]
+            # first exon
 
             if bed_strand == "+":
                 work_exon = re.sub("\[.*\][LS]{1}", "", work_exon)
@@ -528,8 +486,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                 work_exon = re.sub("[LS]{1}\[.*\]", "", work_exon)
 
         if distance_watcher_stop > 100 and stop_exon != 0:
-            # work_exon = return_list[-1] # last exon
-            # work_exon = re.sub("[LS]{0,1}\[.*\]", "", work_exon)
 
             if not work_exon:
                 work_exon = return_list[-1]
@@ -538,8 +494,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                 work_exon = re.sub("[LS]{1}\[.*\]", "", work_exon)
             else:
                 work_exon = re.sub("\[.*\][LS]{1}", "", work_exon)
-
-        # print("work exon " + str(work_exon))
 
         # we looked for new 5' and 3'
         if distance_watcher_start > 100 and distance_watcher_stop > 100:
@@ -561,7 +515,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
                 return_list.insert(0, str(start_exon))
                 return_list.append(str(stop_exon))
-                # print(return_list)
 
             # we got a new start but not stop
             elif start_exon != 0 and stop_exon == 0:
@@ -602,8 +555,6 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                     return_list.append(str(work_exon))
                     return_list.append(str(stop_exon))
 
-    # print(return_list)
-
     # either still nothing, or, distance still > 1000 insert new exons
     if abs(start_fit) > 1000 and abs(stop_fit) > 1000:
         # still no good fit, let's assume we have new exons
@@ -618,13 +569,8 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
         else:
             return_list[-1] = re.sub("\[.*\][LS]{1}", "", return_list[-1])
 
-        # (return_list)
-
         return_list.insert(0, "NE")
-        # print(return_list)
-
         return_list.append("NE")
-        # print(return_list)
 
 
     elif abs(start_fit) > 1000 and abs(stop_fit) < 1000:
@@ -659,9 +605,8 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
         max(start_fit, stop_fit)
 
 
-
 # process file function
-def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result_dict = None):
+def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result_dict = None, blast_db=None, bedfile=None):
 
     with open(filename, 'r') as fp:
 
@@ -684,8 +629,6 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             circrna_id = line[1]
             circrna_sequence = line[2]
 
-            print(circrna_id)
-
             # get coordinates from lookup table
             circrna_coordinates = coordinate_dict[circrna_id]
 
@@ -701,7 +644,6 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             blast_output = tempfile.NamedTemporaryFile(mode="w")
 
             # FASTA header
-            # fasta.write(">" + circrna_id + "\n")
             fasta_query.write(">" + circrna_id + "@" + circrna_coordinates + "\n")
 
             # sequence
@@ -733,13 +675,8 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             # used for intersect to filter out far away regions
             os.system("egrep \"\s" +
                       gene_name +
-                      "!\" " + "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed" +
+                      "!\" " + bedfile +
                       " > "+limit_bed_db.name)
-
-            # os.system("egrep \"\s" +
-            #           gene_name +
-            #           "!\" " + "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed" +
-            #           " > " + debug_file_name)
 
             limit_bed_db.flush()
 
@@ -802,7 +739,7 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
 
             # start blast query for this circRNA
             run_blast_query(
-                database="/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed.fasta",
+                database=blast_db,
                 fasta_query_file=fasta_query.name,
                 limit_bsl_file=limit_bsl.name,
                 blast_output_file=blast_output.name,
@@ -811,7 +748,7 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             blast_output.flush()
 
             if os.path.getsize(blast_output.name) == 0:
-               continue
+                continue
 
             # perform some alchemy to magically conjure the new IDs
             new_id = process_blast_results(file_name=blast_output.name,
@@ -839,19 +776,13 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             # remove from circRNA dict and mark as done
             del coordinate_dict[circrna_id]
 
-            # print(len(coordinate_dict))
-
-            # print(circrna_id + "\t" +
-            #       str(new_id[0]) + "\t" +
-            #       circrna_coordinates)
-
             result_dict[circrna_id] = {"new_id": new_id[0],
                                        "error": new_id[1],
                                        "coordinates": str(circrna_coordinates),
                                        "source": "BLAST"}
 
 
-def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, result_dict=None):
+def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, result_dict=None, bedfile=None):
 
     with open(filename, 'r') as fp:
 
@@ -859,15 +790,9 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
 
         for line in lines:
 
-            fit = None
-
             line = line.strip().split("\t")
 
             circrna = line[1]
-
-            print(circrna)
-
-            return_list = []
 
             # this circRNA has already been processed with the BLAST pipeline
             if circrna in result_dict:
@@ -887,8 +812,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             else:
                 gene_name = "NA"
 
-            bedtools_string = ""
-
             bed_items_to_intersect = tempfile.NamedTemporaryFile(mode="w")
 
             coordinates = coordinate_dict[circrna]
@@ -899,48 +822,31 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
 
             circ_length = circ_stop - circ_start
 
-            # bedtools_string += "\t".join([circ_chr,
-            #                               str(circ_start),
-            #                               str(circ_start),
-            #                               circrna + "_start"]) + "\n"
-            #
-            # bedtools_string += "\t".join([circ_chr,
-            #                               str(circ_stop),
-            #                               str(circ_stop),
-            #                               circrna + "_end"]) + "\n"
-
             bedtools_string = "\t".join([circ_chr,
                                          str(circ_start - 1000),
                                          str(circ_stop + 1000),
                                          "exon_fix"]) + "\n"
 
-            bed_obj_db = None
-
             # get only parts of the BED file that correspond to the current gene
             if gene_name != "NA":
                 os.system("egrep \"\s" +
                           gene_name +
-                          "!\" " + "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed" +
+                          "!\" " + bedfile +
                           " > " + bed_items_to_intersect.name)
                 bed_items_to_intersect.flush()
                 bed_obj_db = BedTool(bed_items_to_intersect.name)
             else:
                 # well, no gene name, we have to run the full intersect...
-                bed_obj_db = BedTool(
-                    "/home/tjakobi/repos/jakobilab/circhemy/data/blast/GRCh38.90.gtf.gz_final.bed")
+                bed_obj_db = BedTool(bedfile)
 
             bed_obj_query = BedTool(bedtools_string, from_string=True)
 
             # sort by coordinates
             bed_obj_query = bed_obj_query.sort()
 
-            # print(bed_obj)
-
             # merge contained exons, i.e. if exon 5 is 500 bp and exon 3 if 100 bp
             # completely within exon 5 only keep exon 5
             bed_obj_query = bed_obj_query.merge(c="4", o="first")
-
-
 
             intersection = bed_obj_db.intersect(bed_obj_query)
 
@@ -948,10 +854,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             with open(debug_file_name, mode="w", ) as debug_file:
                 debug_file.write(str(intersection))
             debug_file.close()
-
-            #
-            # print(intersection)
-            # print(bed_obj_query)
 
             start_exon = 0
             stop_exon = 0
@@ -969,11 +871,8 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             bed_gene_name_list = []
 
             for bed_line in io.StringIO(str(intersection)):
-                # print(bed_line.strip())
 
                 bed_line = bed_line.strip().split("\t")
-
-                bed_strand = bed_line[5]
 
                 # get positions from the name string, NOT from the actual BED
                 # positions as we know those already from above
@@ -983,8 +882,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                 bed_name_start_pos = int(name.split("!")[3])
                 bed_name_stop_pos = int(name.split("!")[4])
                 bed_name_type = name.split("!")[5]
-
-
 
                 if bed_gene_name != name.split("!")[0]:
                     bed_gene_name_list.append(name.split("!")[0])
@@ -1004,15 +901,12 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
 
                 # direct hit for start
                 if bed_name_type == "E" and bed_name_start_pos == circ_start:
-                    # print("perfect start")
                     start_exon = bed_name_exon_num
                     start_exon_dist_dict[0] = bed_name_exon_num
 
                 elif bed_name_type == "E":
                     start_exon_dist_dict[
                         circ_start - bed_name_start_pos] = bed_name_exon_num
-
-                    # print("non perfect start: "  + str(circ_start-bed_name_start_pos))
 
                 # if not elif because we might have a single-exon circRNA
 
@@ -1026,7 +920,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                 elif bed_name_type == "E":
                     stop_exon_dist_dict[
                         circ_stop - bed_name_stop_pos] = bed_name_exon_num
-                    # print("non perfect end: "  + str(circ_stop-bed_name_stop_pos))
 
                 # intron processing
                 # because we did not hit any exons in the area
@@ -1068,15 +961,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             if stop_exon != 0:
                 stop_fit = 0
 
-            # print("min:" + str(min_val))
-            # print(start_fit)
-            # print(stop_fit)
-
-            # print(start_exon)
-            # print(stop_exon)
-
-
-            # print("leaving loop")
             # perfect hit yet, let's look at the suboptimal hits
             if stop_exon == 0 and len(stop_exon_dist_dict.keys()) > 0:
 
@@ -1107,9 +991,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
 
                 if start_fit != 0 and min(list(start_exon_dist_dict.keys()), key=abs) < abs(start_fit):
                     start_fit = min(list(start_exon_dist_dict.keys()), key=abs)
-
-                # print("start fit " + str(list(start_exon_dist_dict.keys())))
-                # print("start fit " + str(start_fit))
 
                     # we have the same exon, have
                 # to add the modifier to the same string
@@ -1142,23 +1023,12 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                         # will be unified in the next step
                         start_exon = 0
 
-            # print(start_exon)
-            # print(stop_exon)
-            #
-            # print(start_fit)
-            # print(stop_fit)
-            #
-            # print(return_list)
-
             # no exon matched, try introns
             if start_exon == 0 and stop_exon == 0:
                 start_exon = "NE"
 
             if stop_exon == 0:
                 stop_exon = "NE"
-            #
-            # print(start_exon)
-            # print(stop_exon)
 
             if start_exon == stop_exon and start_exon != "NE":
                 return_list = [start_exon]
@@ -1168,18 +1038,12 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                 return_list = [start_exon, stop_exon]
             else:
                 return_list = [stop_exon]
-            # print("muh")
-            # print(return_list)
 
             # either still nothing, or, distance still > 1000 insert new exons
             if abs(start_fit) > 1000 and abs(stop_fit) > 1000:
                 # still no good fit, let's assume we have new exons
-
-                # print(return_list)
                 return_list.clear()
-
                 return_list.insert(0, "NE")
-
                 return_list.append("NE")
 
             elif abs(start_fit) > 1000 and abs(stop_fit) < 1000:
@@ -1191,8 +1055,6 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
 
                 del return_list[-1]
                 return_list.append("NE")
-
-            # print(return_list)
 
             if bed_line[5] == "-":
                 return_list.reverse()
@@ -1217,9 +1079,83 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                                     "coordinates": coordinates,
                                     "source": "intersect"}
 
-    return
 
-    ### end of processing
+parser = argparse.ArgumentParser(
+    prog="convert_circrna_names",
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    fromfile_prefix_chars="@",
+    description="Maps CircAtlas circRNA IDs to the Chen et al. 2023 naming "
+                "scheme. "
+                "Uses data prepared by naming_conversion_data_preparation\n"
+                "\n"
+                "Version 0.0.2\n"
+                "\n"
+                "https://github.com/jakobilab/circhemy\n"
+                "https://jakobilab.org\n"
+                "tjakobi@arizona.edu",
+
+    usage=""" naming_conversion_data_preparation [<args>]"""
+)
+
+group = parser.add_argument_group("output parameters")
+
+group.add_argument("-c",
+                   "--circatlas",
+                   dest="circatlas",
+                   default="./",
+                   help="Path to the CircAtlas data table",
+                   required=True
+                   )
+
+group.add_argument("-s",
+                   "--sequence",
+                   dest="circatlas_sequences",
+                   default="./",
+                   help="Path to the CircAtlas sequences file",
+                   required=True
+                   )
+
+
+group.add_argument("-o",
+                   "--output",
+                   dest="output_file",
+                   default="./circrna_mapping.csv",
+                   help="The output file for the circRNA name mapping"
+                   )
+
+group.add_argument("-b",
+                   "--blast",
+                   dest="blast_db",
+                   help="Path to BLAST database",
+                   required=True
+                   )
+
+group.add_argument("-B",
+                   "--bedfile",
+                   dest="bedfile",
+                   help="Path to the BED file containing exons, "
+                        "introns, and genes.",
+                   required=True
+                   )
+
+group.add_argument("-t",
+                   "--threads",
+                   dest="cpu_threads",
+                   help="Number of CPUs to use for multiprocessing",
+                   default=4,
+                   type=int
+                   )
+
+group.add_argument("-C",
+                   "--chunksize",
+                   dest="chunk_size",
+                   help="Number of lines to process in batch per thread",
+                   default=10000,
+                   type=int
+                   )
+
+
+args = parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -1234,8 +1170,7 @@ if __name__ == "__main__":
 
     total_circrna_count = 0
     print("Preparing circAtlas ID -> coordinate lookup table")
-    with open(
-            "/home/tjakobi/repos/jakobilab/circhemy/old_dev_stuff/raw/circatlas/1000.txt") as f:
+    with open(args.circatlas) as f:
         next(f)
         # skip header
         for line in f:
@@ -1243,29 +1178,18 @@ if __name__ == "__main__":
             coordinate_dict[line[1]] = line[2]
             total_circrna_count += 1
 
-    cpu_count = 10
-
-    filename = "/home/tjakobi/repos/jakobilab/circhemy/old_dev_stuff/raw/circatlas/1000_seq.txt"
+    cpu_count = args.cpu_threads
 
     # get file size and set chuck size
-    line_chunk_size = 200
+    line_chunk_size = args.chunk_size
 
-    # run through circRNA sequence file to get line numbers
-    # we will process chunks of fill lines in parallel later
+    print(str(total_circrna_count) + " circRNAs to process")
 
-    ### DEBUG TEST
-
-    with open(filename, 'r') as fp:
-        for count, line in enumerate(fp):
-            pass
-
-    fp.close()
-    line_numbers = count + 1
-
-    print(str(line_numbers) + " circRNAs to process in file")
+    print("Starting phase 1: assignment of exons for"
+          " circRNAs with full sequence information")
 
     # determine if it needs to be split
-    if line_numbers > line_chunk_size:
+    if total_circrna_count > line_chunk_size:
 
         # create pool, initialize chunk start location (cursor)
         pool = mp.Pool(cpu_count)
@@ -1273,17 +1197,23 @@ if __name__ == "__main__":
         results = []
 
         # for every chunk in the file...
-        for chunk in range((line_numbers // line_chunk_size) + 1):
+        for chunk in range((total_circrna_count // line_chunk_size) + 1):
 
             # determine where the chunk ends, is it the last one?
-            if cursor + line_chunk_size > line_numbers:
-                end = line_numbers
+            if cursor + line_chunk_size > total_circrna_count:
+                end = total_circrna_count
             else:
                 end = cursor + line_chunk_size
 
             # add chunk to process pool, save reference to get results
             proc = pool.apply_async(process_circrna_file,
-                                    args=[filename, cursor, end, coordinate_dict, result_dict])
+                                    args=[args.circatlas,
+                                          cursor,
+                                          end,
+                                          coordinate_dict,
+                                          result_dict,
+                                          args.blast_db,
+                                          args.bedfile])
             # results.append(proc)
 
             # setup next chunk
@@ -1293,27 +1223,24 @@ if __name__ == "__main__":
         pool.close()
         pool.join()
 
-        # # iterate through results
-        # for proc in results:
-        #     processfile_result = proc.get()
-
     else:
-        process_circrna_file(filename=filename,
+        process_circrna_file(filename=args.circatlas,
                              start=0,
-                             stop=line_numbers,
+                             stop=total_circrna_count,
                              coordinate_dict=coordinate_dict,
-                             result_dict=result_dict)
+                             result_dict=result_dict,
+                             blast_db=args.blast_db,
+                             bedfile=args.bedfile)
 
     # here starts fallback code for
     #  - circRNAs without BLAST results
     #  - intergenic circRNAs
     #  - circRNAs without sequence in the sequence table (or partial)
 
-    filename = "/home/tjakobi/repos/jakobilab/circhemy/old_dev_stuff/raw/circatlas/1000.txt"
+    print("Starting phase 2: assignment of exons for"
+          " circRNAs without sequence information")
 
-    print(str(total_circrna_count) + " circRNAs to process in file")
-
-    process_remaining_circrnas(filename=filename,
+    process_remaining_circrnas(filename=args.circatlas,
                                start=0,
                                stop=total_circrna_count,
                                coordinate_dict=coordinate_dict,
@@ -1338,11 +1265,12 @@ if __name__ == "__main__":
 
             # add chunk to process pool, save reference to get results
             proc = pool.apply_async(process_remaining_circrnas,
-                                    args=[filename,
+                                    args=[args.circatlas,
                                           cursor,
                                           end,
                                           coordinate_dict,
-                                          result_dict])
+                                          result_dict,
+                                          args.bedfile])
             # results.append(proc)
 
             # setup next chunk
@@ -1352,23 +1280,19 @@ if __name__ == "__main__":
         pool.close()
         pool.join()
 
-        # # iterate through results
-        # for proc in results:
-        #     processfile_result = proc.get()
-
     else:
-        process_remaining_circrnas(filename=filename,
-                             start=0,
-                             stop=total_circrna_count,
-                             coordinate_dict=coordinate_dict,
-                             result_dict=result_dict)
+        process_remaining_circrnas(filename=args.circatlas,
+                                   start=0,
+                                   stop=total_circrna_count,
+                                   coordinate_dict=coordinate_dict,
+                                   result_dict=result_dict,
+                                   bedfile=args.bedfile)
 
-
-    with open("out.csv", mode="w", ) as out_file:
+    with open(args.output_file, mode="w", ) as out_file:
         for circrna in result_dict:
             out_file.write("\t".join([circrna,
-            result_dict[circrna]['new_id'],
-            str(result_dict[circrna]['error']),
-            result_dict[circrna]['coordinates'],
-            result_dict[circrna]['source']
-            ]) + "\n")
+                                      result_dict[circrna]['new_id'],
+                                      str(result_dict[circrna]['error']),
+                                      result_dict[circrna]['coordinates'],
+                                      result_dict[circrna]['source']
+                                      ]) + "\n")
