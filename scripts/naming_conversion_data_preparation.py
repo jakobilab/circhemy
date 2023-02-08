@@ -72,8 +72,7 @@ group.add_argument("-o",
 group.add_argument("-s",
                    "--species",
                    dest="species",
-                   help="Species to process: "
-                        "mus_musculus, homo_sapiens, or rattus_norvegicus",
+                   help="Species to process",
                    choices=("mus_musculus", "homo_sapiens", "rattus_norvegicus"),
                    default=["mus_musculus", "homo_sapiens", "rattus_norvegicus"]
 )
@@ -455,6 +454,8 @@ def process_species(species):
 
 # main program loop
 
-for item in args.species:
-    process_species(item)
-
+if isinstance(args.species, list):
+    for item in args.species:
+        process_species(item)
+else:
+    process_species(args.species)
