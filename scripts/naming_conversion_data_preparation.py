@@ -119,7 +119,7 @@ def process_fasta(bed_file, genome):
             sam_pos = line[0]+":"+str(line[1])+"-"+str(line[2])
 
             # no NOT write out gene bodies into FASTA
-            if line[3].split("!")[5] == "g":
+            if line[3].split("!")[5] == "G":
                 continue
 
             seq = pysam_obj.fetch(region=sam_pos)
