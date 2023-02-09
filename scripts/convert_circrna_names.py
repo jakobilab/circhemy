@@ -1107,7 +1107,6 @@ group = parser.add_argument_group("output parameters")
 group.add_argument("-c",
                    "--circatlas",
                    dest="circatlas",
-                   default="./",
                    help="Path to the CircAtlas data table",
                    required=True
                    )
@@ -1115,7 +1114,6 @@ group.add_argument("-c",
 group.add_argument("-s",
                    "--sequence",
                    dest="circatlas_sequences",
-                   default="./",
                    help="Path to the CircAtlas sequences file",
                    required=True
                    )
@@ -1223,7 +1221,6 @@ if __name__ == "__main__":
 
             # setup next chunk
             cursor = end + 1
-
 
         # close and wait for pool to finish
         pool.close()
