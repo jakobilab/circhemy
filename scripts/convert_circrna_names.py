@@ -1223,6 +1223,7 @@ if __name__ == "__main__":
             cursor = end + 1
 
         # close and wait for pool to finish
+        proc.get()
         pool.close()
         pool.join()
 
