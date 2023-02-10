@@ -59,7 +59,7 @@ def beautify_bed_names(bed_name_input, circrna_id):
     # check which species we are in to get the correct ENSEMBL ID
     if circrna_id.split("-")[0] == "hsa":
         ensembl_prefix = "ENSG"
-    elif circrna_id.split("-")[0] == "msa":
+    elif circrna_id.split("-")[0] == "mmu":
         ensembl_prefix = "ENSMUSG"
     elif circrna_id.split("-")[0] == "rno":
         ensembl_prefix = "ENSRNOG"
@@ -646,7 +646,14 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
 
 # process file function
-def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result_dict = None, blast_db=None, bedfile=None):
+def process_circrna_file(filename,
+                         start=0,
+                         stop=0,
+                         coordinate_dict=None,
+                         result_dict = None,
+                         blast_db=None,
+                         bedfile=None,
+                         stats=None):
 
     with open(filename, 'r') as fp:
 
@@ -665,21 +672,15 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
 
             # only partial sequence, nothing to do here
             if line[2] == "partial":
-                # result_dict[circrna_id] = {"new_id": "NA",
-                #                            "error": 0,
-                #                            "coordinates": str(
-                #                                circrna_coordinates),
-                #                            "source": "PARTIAL"}
+                stats[circrna_id] = {"coordinates": str(circrna_coordinates),
+                                     "source": "PARTIAL"}
                 continue
 
             # we do not look at intergeni circRNAs (yet)
             # TODO: add intergenic circRNA support
             if "intergenic" in line[1]:
-                # result_dict[circrna_id] = {"new_id": "NA",
-                #                            "error": 0,
-                #                            "coordinates": str(
-                #                                circrna_coordinates),
-                #                            "source": "INTERGENIC"}
+                stats[circrna_id] = {"coordinates": str(circrna_coordinates),
+                                     "source": "INTERGENIC"}
                 continue
 
             # prepare TMP files for BLASTing
@@ -728,7 +729,16 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
                       "!\" " + bedfile +
                       " > "+limit_bed_db.name)
 
+            # make sure data is written to file
             limit_bed_db.flush()
+
+            # nothing in the BLAST prefilter, we can stop here already
+            # this has to be fixed later with bedtools intersect if at all
+            # possible
+            if os.path.getsize(limit_bed_db.name) == 0:
+                stats[circrna_id] = {"coordinates": str(circrna_coordinates),
+                                     "source": "EMPTY_BLAST_DB"}
+                continue
 
             debug_bed_file = open(debug_file_name, "w")
 
@@ -773,14 +783,10 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             limit_text.flush()
 
             if row_count == 0:
-
                 # TODO: this should be a branch out call for standard
                 # bedtools interect to get exon numbers based on coordinates
-                # result_dict[circrna_id] = {"new_id": "NA",
-                #                            "error": 0,
-                #                            "coordinates": str(
-                #                                circrna_coordinates),
-                #                            "source": "EMPTY_BED"}
+                stats[circrna_id] = {"coordinates": str(circrna_coordinates),
+                                     "source": "EMPTY_BED_INTERSECT"}
                 continue
 
             # convert limit file so BLAST can read it
@@ -802,11 +808,8 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             blast_output.flush()
 
             if os.path.getsize(blast_output.name) == 0:
-                # result_dict[circrna_id] = {"new_id": "NA",
-                #                            "error": 0,
-                #                            "coordinates": str(
-                #                                circrna_coordinates),
-                #                            "source": "NO_BLAST_HIT"}
+                stats[circrna_id] = {"coordinates": str(circrna_coordinates),
+                                     "source": "NO_BLAST_HIT"}
                 continue
 
             # perform some alchemy to magically conjure the new IDs
@@ -837,16 +840,25 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             result_dict[circrna_id] = {"new_id": new_id[0],
                                        "error": new_id[1],
                                        "coordinates": str(circrna_coordinates),
-                                       "source": "BLAST"}
+                                       "source": "BLAST_HIT"}
 
-            sys.stdout.write("\r"+str(len(result_dict)) +
+            stats[circrna_id] = {"coordinates": str(circrna_coordinates),
+                                 "source": "BLAST_HIT"}
+
+            sys.stdout.write("\r"+f'{len(result_dict):,}' +
                              " circRNAs processed, "+
-                             str(len(coordinate_dict))+
+                             f'{len(coordinate_dict):,}'+
                              " circRNAs remaining")
             sys.stdout.flush()
 
 
-def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, result_dict=None, bedfile=None):
+def process_remaining_circrnas(filename,
+                               start=0,
+                               stop=0,
+                               coordinate_dict=None,
+                               result_dict=None,
+                               bedfile=None,
+                               stats=None):
 
     with open(filename, 'r') as fp:
 
@@ -870,6 +882,8 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             # hg38 coordinates.
             # those won't be used or converted (also for rn5 or mm9)
             if circrna == "-":
+                stats[line[3]] = {"coordinates": str(line[3]),
+                                     "source": "OLD_GENOME"}
                 continue
 
             # check what kind of circRNA ID we have:
@@ -1148,11 +1162,14 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             result_dict[circrna] = {"new_id": new_id,
                                     "error": max(abs(start_fit), abs(stop_fit)),
                                     "coordinates": coordinates,
-                                    "source": "intersect"}
+                                    "source": "BEDTOOLS"}
 
-            sys.stdout.write("\r"+str(len(result_dict)) +
+            stats[line[3]] = {"coordinates": str(coordinates),
+                              "source": "BEDTOOLS"}
+
+            sys.stdout.write("\r"+f'{len(result_dict):,}' +
                              " circRNAs processed, "+
-                             str(len(coordinate_dict))+
+                             f'{len(coordinate_dict):,}'+
                              " circRNAs remaining")
             sys.stdout.flush()
 
@@ -1243,6 +1260,10 @@ if __name__ == "__main__":
     # hold circRNA ID (circAtlas) as key and novel naming scheme ID as value
     result_dict = manager.dict()
 
+    # holds stats for each circRNA, i.e. found via BLAST, bedtools, or why no
+    # it was excluded
+    stats_dict = manager.dict()
+
     total_circrna_count = 0
     print("Preparing circAtlas ID -> coordinate lookup table")
     with open(args.circatlas) as f:
@@ -1250,6 +1271,10 @@ if __name__ == "__main__":
         # skip header
         for line in f:
             line = line.split("\t")
+            if line[1] == "-":
+                # this is an hg19/rn5/mm9-only circRNA
+                # we skip these
+                continue
             coordinate_dict[line[1]] = line[2]
             total_circrna_count += 1
 
@@ -1258,8 +1283,7 @@ if __name__ == "__main__":
     # get file size and set chuck size
     line_chunk_size = args.chunk_size
 
-    print(str(total_circrna_count) + " circRNAs to process")
-
+    print(f'{total_circrna_count:,}' + " circRNAs to process")
     print("Starting phase 1: assignment of exons for"
           " circRNAs with full sequence information")
 
@@ -1268,7 +1292,7 @@ if __name__ == "__main__":
 
         # create pool, initialize chunk start location (cursor)
         pool = mp.Pool(cpu_count)
-        cursor = 0
+        cursor = 1
         results = []
 
         # for every chunk in the file...
@@ -1288,9 +1312,8 @@ if __name__ == "__main__":
                                           coordinate_dict,
                                           result_dict,
                                           args.blast_db,
-                                          args.bedfile])
-            # results.append(proc)
-
+                                          args.bedfile,
+                                          stats_dict])
             # setup next chunk
             cursor = end + 1
 
@@ -1303,34 +1326,30 @@ if __name__ == "__main__":
 
     else:
         process_circrna_file(filename=args.circatlas_sequences,
-                             start=0,
+                             start=1,
                              stop=total_circrna_count,
                              coordinate_dict=coordinate_dict,
                              result_dict=result_dict,
                              blast_db=args.blast_db,
-                             bedfile=args.bedfile)
+                             bedfile=args.bedfile,
+                             stats=stats_dict)
 
     # here starts fallback code for
     #  - circRNAs without BLAST results
     #  - intergenic circRNAs
     #  - circRNAs without sequence in the sequence table (or partial)
 
+    print("")
+    print("Done")
     print("Starting phase 2: assignment of exons for"
           " circRNAs without sequence information")
-
-    process_remaining_circrnas(filename=args.circatlas,
-                               start=0,
-                               stop=total_circrna_count,
-                               coordinate_dict=coordinate_dict,
-                               result_dict=result_dict,
-                               bedfile=args.bedfile)
 
     # determine if it needs to be split
     if total_circrna_count > line_chunk_size:
 
         # create pool, initialize chunk start location (cursor)
         pool = mp.Pool(cpu_count)
-        cursor = 0
+        cursor = 1
         results = []
 
         # for every chunk in the file...
@@ -1349,7 +1368,8 @@ if __name__ == "__main__":
                                           end,
                                           coordinate_dict,
                                           result_dict,
-                                          args.bedfile])
+                                          args.bedfile,
+                                          stats_dict])
             # results.append(proc)
 
             # setup next chunk
@@ -1361,12 +1381,16 @@ if __name__ == "__main__":
 
     else:
         process_remaining_circrnas(filename=args.circatlas,
-                                   start=0,
+                                   start=1,
                                    stop=total_circrna_count,
                                    coordinate_dict=coordinate_dict,
                                    result_dict=result_dict,
-                                   bedfile=args.bedfile)
+                                   bedfile=args.bedfile,
+                                   stats=stats_dict)
 
+    print("")
+    print("Done")
+    print("Writing output file")
     with open(args.output_file, mode="w", ) as out_file:
         for circrna in result_dict:
             out_file.write("\t".join([circrna,
@@ -1375,3 +1399,34 @@ if __name__ == "__main__":
                                       result_dict[circrna]['coordinates'],
                                       result_dict[circrna]['source']
                                       ]) + "\n")
+    print("Done")
+
+
+    no_blast_hit = 0
+    blast_hit = 0
+    old_gename = 0
+    bedtools = 0
+    partial = 0
+    intergenic = 0
+    empty_blast_db = 0
+    empty_bed_intersect = 0
+
+    tmp_dict = {'NO_BLAST_HIT': 0,
+                'BLAST_HIT': 0,
+                'OLD_GENOME': 0,
+                'BEDTOOLS': 0,
+                'PARTIAL': 0,
+                'INTERGENIC': 0,
+                'EMPTY_BLAST_DB': 0,
+                'EMPTY_BED_INTERSECT': 0
+                }
+
+    # summarize stats data
+    for circrna in stats_dict:
+        tmp_dict[stats_dict[circrna]['source']] += 1
+
+    print("Stats:")
+    print("-----------------")
+    # print out data
+    for endpoint in tmp_dict:
+        print(endpoint + ": " + str(tmp_dict[endpoint]))
