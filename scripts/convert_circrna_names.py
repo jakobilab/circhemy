@@ -921,10 +921,10 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
 
             intersection = bed_obj_db.intersect(bed_obj_query)
 
-            debug_file_name = "out/" +circrna+".bed"
-            with open(debug_file_name, mode="w", ) as debug_file:
-                debug_file.write(str(intersection))
-            debug_file.close()
+            # debug_file_name = "out/" +circrna+".bed"
+            # with open(debug_file_name, mode="w", ) as debug_file:
+            #     debug_file.write(str(intersection))
+            # debug_file.close()
 
             start_exon = 0
             stop_exon = 0
