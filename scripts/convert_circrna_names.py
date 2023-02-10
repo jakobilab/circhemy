@@ -858,8 +858,15 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
             # this circRNA has already been processed with the BLAST pipeline
             if circrna in result_dict:
                 continue
+
             # fix for file header
             if circrna == "circpedia2":
+                continue
+
+            # these are hg19 only circRNAs that have no circatlas ID nor
+            # hg38 coordinates.
+            # those won't be used or converted (also for rn5 or mm9)
+            if circrna == "-":
                 continue
 
             # check what kind of circRNA ID we have:
