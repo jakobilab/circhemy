@@ -839,7 +839,10 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
                                        "coordinates": str(circrna_coordinates),
                                        "source": "BLAST"}
 
-            sys.stdout.write("\r"+str(len(result_dict)) + " circRNAs processed")
+            sys.stdout.write("\r"+str(len(result_dict)) +
+                             " circRNAs processed, "+
+                             str(len(coordinate_dict))+
+                             " circRNAs remaining")
             sys.stdout.flush()
 
 
@@ -1147,7 +1150,10 @@ def process_remaining_circrnas(filename, start=0, stop=0, coordinate_dict=None, 
                                     "coordinates": coordinates,
                                     "source": "intersect"}
 
-            sys.stdout.write("\r"+str(len(result_dict)) + " circRNAs processed")
+            sys.stdout.write("\r"+str(len(result_dict)) +
+                             " circRNAs processed, "+
+                             str(len(coordinate_dict))+
+                             " circRNAs remaining")
             sys.stdout.flush()
 
 
