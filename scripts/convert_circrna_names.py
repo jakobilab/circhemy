@@ -1401,16 +1401,6 @@ if __name__ == "__main__":
                                       ]) + "\n")
     print("Done")
 
-
-    no_blast_hit = 0
-    blast_hit = 0
-    old_gename = 0
-    bedtools = 0
-    partial = 0
-    intergenic = 0
-    empty_blast_db = 0
-    empty_bed_intersect = 0
-
     tmp_dict = {'NO_BLAST_HIT': 0,
                 'BLAST_HIT': 0,
                 'OLD_GENOME': 0,
