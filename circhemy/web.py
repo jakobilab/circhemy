@@ -963,6 +963,13 @@ allows the user to convert from one type of circRNA ID to a wide variety of
 other database identifiers, while query allows users to run direct queries on 
 the circRNA database to extract circRNAs fulfilling a user-defined set of 
 constraints.
+
+Moreover, circhemy is the first circRNA resource that supports and integrates 
+the first version of the **C**ircRNA **S**tandard **N**omenclature (abbreviated 
+**CSNv1** in circhemy) as outlined in **["A guide to naming eukaryotic circular 
+RNAs", Chen et al. 2023.](https://www.nature.com/articles/s41556-022-01066-9)**. 
+Currently, circhemy contains CSNv1 names for nearly 1 million circRNAs of Human, 
+mouse, and rat. 
             """)
 
     with ui.card().style('width: 100%;') as card:
