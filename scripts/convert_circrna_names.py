@@ -49,6 +49,35 @@ def run_blast_query(database,
     return
 
 
+def beautify_bed_names(bed_name_input, circrna_id):
+
+    # check if intron or exon
+    bed_name_input = bed_name_input.split("!")
+
+    ensembl_prefix = ""
+
+    # check which species we are in to get the correct ENSEMBL ID
+    if circrna_id.split("-")[0] == "hsa":
+        ensembl_prefix = "ENSG"
+    elif circrna_id.split("-")[0] == "msa":
+        ensembl_prefix = "ENSMUSG"
+    elif circrna_id.split("-")[0] == "rno":
+        ensembl_prefix = "ENSRNOG"
+
+    gene = bed_name_input[0]
+    ensembl_id = bed_name_input[1]
+    chr = bed_name_input[2]
+    start = bed_name_input[3]
+    end = bed_name_input[4]
+    type = bed_name_input[5]
+
+    output_name = gene + " | " + ensembl_prefix + "00000" + ensembl_id \
+                  + " | " + type + " | " + chr + ":"+start+"-"+end
+
+    return output_name
+
+
+
 def get_circrna_boundaries_from_bedfile(bedfile):
 
     lines = bedfile.split("\n")
@@ -182,6 +211,9 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
                 # print("aligned: " + str(perc_aligned))
                 # print("not fully aligned intron, making it novel exon")
 
+            name_tag = beautify_bed_names(bed_name_input=line[1],
+                                          circrna_id=line[0].split("@")[0])
+
             bedtools_string = bedtools_string + "\t".join([item_chr,
                                                            str(circ_item_start),
                                                            str(circ_item_stop),
@@ -260,6 +292,8 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
     # sort by coordinates
     bed_obj = bed_obj.sort()
 
+    single_intron_check = False
+
     # merge contained exons, i.e. if exon 5 is 500 bp and exon 3 if 100 bp
     # completely within exon 5 only keep exon 5
     merged_blast_results = bed_obj.merge(c="4", o="first")
@@ -279,12 +313,13 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
         return_list.append("".join(tmp_list))
 
-        # print("blu: " + str(return_list))
-
     # here we look at the actual start and stop position of the flanking
     # circRNA exons from the annotated exons from BLAST results
 
     canonical_exon_start, canonical_exon_stop = get_circrna_boundaries_from_bedfile(str(bed_obj))
+
+    if len(return_list) == 1 and return_list[0] == "RI":
+        single_intron_check = True
 
     # we now compare the exons boundaries with the circRNA annotation
     # this is strand independent
@@ -602,8 +637,12 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
     if bed_strand == "-":
         return_list.reverse()
 
-    return "circ"+name[0]+"(" + ",".join(return_list) + ")",\
-        max(start_fit, stop_fit)
+    if single_intron_check:
+        return "circ" + name[0] + "(NE)", \
+            max(distance_watcher_start, distance_watcher_stop)
+    else:
+        return "circ"+name[0]+"(" + ",".join(return_list) + ")",\
+            max(start_fit, stop_fit)
 
 
 # process file function
@@ -617,21 +656,31 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
 
             line = line.strip().split("\t")
 
-            # only partial sequence, nothing to do here
-            if line[2] == "partial":
-                continue
-
-            # we do not look at intergeni circRNAs (yet)
-            # TODO: add intergenic circRNA support
-            if "intergenic" in line[1]:
-                continue
-
             # we got a circRNA with sequence
             circrna_id = line[1]
             circrna_sequence = line[2]
 
             # get coordinates from lookup table
             circrna_coordinates = coordinate_dict[circrna_id]
+
+            # only partial sequence, nothing to do here
+            if line[2] == "partial":
+                # result_dict[circrna_id] = {"new_id": "NA",
+                #                            "error": 0,
+                #                            "coordinates": str(
+                #                                circrna_coordinates),
+                #                            "source": "PARTIAL"}
+                continue
+
+            # we do not look at intergeni circRNAs (yet)
+            # TODO: add intergenic circRNA support
+            if "intergenic" in line[1]:
+                # result_dict[circrna_id] = {"new_id": "NA",
+                #                            "error": 0,
+                #                            "coordinates": str(
+                #                                circrna_coordinates),
+                #                            "source": "INTERGENIC"}
+                continue
 
             # prepare TMP files for BLASTing
             # just plain write mode, not binary mode as this
@@ -712,12 +761,12 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
                 # write name of intersected sequences in limit file
                 # print(content[3])
                 limit_text.write(content[3]+"\n")
-                debug_bed_file.write("\t".join([content[0],
-                                                content[1],
-                                                content[2],
-                                                content[3]+"_intersect",
-                                                content[4],
-                                                content[5]])+"\n")
+                # debug_bed_file.write("\t".join([content[0],
+                #                                 content[1],
+                #                                 content[2],
+                #                                 content[3]+"_intersect",
+                #                                 content[4],
+                #                                 content[5]])+"\n")
                 row_count += 1
                 bed_strand = content[5]
 
@@ -727,7 +776,11 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
 
                 # TODO: this should be a branch out call for standard
                 # bedtools interect to get exon numbers based on coordinates
-
+                # result_dict[circrna_id] = {"new_id": "NA",
+                #                            "error": 0,
+                #                            "coordinates": str(
+                #                                circrna_coordinates),
+                #                            "source": "EMPTY_BED"}
                 continue
 
             # convert limit file so BLAST can read it
@@ -749,6 +802,11 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             blast_output.flush()
 
             if os.path.getsize(blast_output.name) == 0:
+                # result_dict[circrna_id] = {"new_id": "NA",
+                #                            "error": 0,
+                #                            "coordinates": str(
+                #                                circrna_coordinates),
+                #                            "source": "NO_BLAST_HIT"}
                 continue
 
             # perform some alchemy to magically conjure the new IDs
@@ -760,7 +818,8 @@ def process_circrna_file(filename, start=0, stop=0, coordinate_dict=None, result
             circrna_line = "\t".join([circ_chr,
                                              str(circ_start),
                                              str(circ_stop),
-                                             circrna_id + "/" + str(new_id[0])])
+                                             str(new_id[0])
+                                      + " / " + circrna_id])
 
             debug_bed_file.write(circrna_line+"\n")
 
