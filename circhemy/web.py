@@ -1001,10 +1001,16 @@ async def page_rest():
         'text-align: center; font-size: 26pt;')
 
     with ui.card().style('width: 100%;') as card:
-        ui.html("Setup").style('text-align: center; font-size: 16pt;')
+        ui.html("Introduction").style('text-align: center; font-size: 16pt;')
         with ui.card_section():
             ui.markdown("""
-REST text
+Representational State Transfer, or REST for short, allows users and software 
+developers to easily access circhemy from within their own tools or pipelines. 
+Circhemy's REST API uses JSON for input queries and returning output, making it 
+easy to format queries from every programming language or even by hand. The REST
+ API it publicly available and uses a fixed set of keywords to perform 
+conversions or queries. Two examples for the two different modes of action are 
+shown below.
     """)
 
     with ui.card().style('width: 100%;') as card:
