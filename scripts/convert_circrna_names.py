@@ -415,7 +415,7 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
     if max(distance_watcher_start, distance_watcher_stop) > 100:
 
         bedtools_string = "\t".join([circ_chr,
-                                     str(circ_start - 1000),
+                                     str(0 if circ_start-1000<0 else circ_start-1000),
                                      str(circ_stop + 1000),
                                      "exon_fix"]) + "\n"
 
@@ -908,7 +908,7 @@ def process_remaining_circrnas(filename,
             circ_length = circ_stop - circ_start
 
             bedtools_string = "\t".join([circ_chr,
-                                         str(circ_start - 1000),
+                                         str(0 if circ_start-1000<0 else circ_start-1000),
                                          str(circ_stop + 1000),
                                          "exon_fix"]) + "\n"
 
@@ -925,6 +925,13 @@ def process_remaining_circrnas(filename,
                 bed_obj_db = BedTool(bedfile)
 
             bed_obj_query = BedTool(bedtools_string, from_string=True)
+
+            # make sure we actually got something with the grep command above:
+            if os.path.getsize(bed_items_to_intersect.name) == 0:
+                # no, we got nothing, doing a full intersect
+                bed_obj_db = BedTool(bedfile)
+
+            ##### create fallback by using a full intersect to get something
 
             # sort by coordinates
             bed_obj_query = bed_obj_query.sort()
