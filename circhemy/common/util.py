@@ -83,7 +83,8 @@ class Util(object):
                         "Start": "",
                         "Stop": "",
                         "Genome": "",
-                        "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?"
+                        "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?",
+                        "Species": ""
                         }
 
     db_connection = ""

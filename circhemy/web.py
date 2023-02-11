@@ -250,13 +250,13 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                 tmp = constraint.query.replace("*", "", 1)
                 sql_query += constraint.field + " LIKE \"%" \
                              + tmp + "%\" "
-            elif constraint.operator2 is "is":
+            elif constraint.operator2 == "is":
                 sql_query += constraint.field + " == \"" \
                              + constraint.query+ "\" "
-            elif constraint.operator2 is ">":
+            elif constraint.operator2 == ">":
                 sql_query += constraint.field + " > \"" \
                              + constraint.query + "\" "
-            elif constraint.operator2 is "<":
+            elif constraint.operator2 == "<":
                 sql_query += constraint.field + " < \"" \
                              + constraint.query + "\" "
 
@@ -1015,12 +1015,51 @@ REST text
                         "input circRNA ID into different one or more database"
                         "identifiers.")
             ui.markdown("""
-Example: Convert a list of circatlas IDs read via STDIN from file `input.csv` 
-into circpedia2 IDs, but also output circatlas IDs, while writing the output to
-`/tmp/output.csv`:
+Example: Convert a list of CircAtlas IDs into circBase and  
+into CircPedia2 IDs, but also output CircAtlas IDs. 
 
-``cat input.csv | circhemy convert  -q STDIN -i circatlas -o circpedia2 
-circatlas -O /tmp/output.csv``""")
+                curl -X 'POST' 'https://circhemy.jakobilab.org/api/convert'
+                  -H 'accept: application/json'
+                  -H 'Content-Type: application/json'
+                  -d '{
+                      "input": "CircAtlas",
+                      "output": ["CircPedia2","CircAtlas"],
+                      "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
+                      }'
+
+""")
+            ui.markdown("""
+
+Output is returned as JSON-formatted string which can directly be used for AG 
+Grid tables for any other postprocessing:
+
+""")
+
+            ui.markdown("""
+
+                {
+                  "columnDefs": [
+                    {
+                      "headerName": "circBase",
+                      "field": "circBase"
+                    },
+                    {
+                      "headerName": "Circpedia2",
+                      "field": "Circpedia2"
+                    }
+                  ],
+                  "rowData": [
+                    {
+                      "circBase": "hsa_circ_0004470",
+                      "Circpedia2": "HSA_CIRCpedia_36582"
+                    },
+                    {
+                      "circBase": "hsa_circ_0004470",
+                      "Circpedia2": "HSA_CIRCpedia_36582"
+                    }
+                  ]
+                }
+""")
 
         with ui.card_section():
             ui.markdown("**Query module**")
@@ -1028,13 +1067,108 @@ circatlas -O /tmp/output.csv``""")
                         "the internal database that fulfil a set of user-defined"
                         " constraints.")
             ui.markdown("""
-Example: Retrieve a list of circbase and circatlas circRNA IDs that are located
-on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
-the rn6 genome build.
+Example: Retrieve all circRNAs with a CircAtlas ID containing *atf* or *xbp1*, 
+return the IDs in circBase and circAtlas format:
 
-``circhemy query -o circbase circatlas -C chr3 
--s rattus_norvegicus -g rn6``
-        """)
+                curl -X 'POST'
+                  'https://circhemy.jakobilab.org/api/query'
+                  -H 'accept: application/json'
+                  -H 'Content-Type: application/json'
+                  -d '{{
+                  "input": [
+                    {
+                      "query": "pdia4",
+                      "field": "CircAtlas",
+                      "operator1": "AND",
+                      "operator2": "LIKE"
+                    },
+                    {
+                      "query": "rattus_norvegicus",
+                      "field": "species",
+                      "operator1": "AND",
+                      "operator2": "IS"
+                    }
+                  ],
+                  "output": [
+                    "circBase",
+                    "CircAtlas"
+                  ]
+                }}'
+
+
+            """)
+            ui.markdown("""
+
+Output is returned as JSON-formatted string which can directly be used for AG 
+Grid tables for any other postprocessing:
+
+            """)
+
+            ui.markdown("""
+
+                {
+                  "columnDefs": [
+                    {
+                      "headerName": "circBase",
+                      "field": "circBase"
+                    },
+                    {
+                      "headerName": "CircAtlas",
+                      "field": "CircAtlas"
+                    }
+                  ],
+                  "rowData": [
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA_0001"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA_0002"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA-AS1_0001"
+                    },
+                    {
+                      "circBase": "hsa_circ_0009871",
+                      "CircAtlas": "hsa-NPPA-AS1_0004"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA-AS1_0002"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA-AS1_0003"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA_0001"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA_0002"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA-AS1_0001"
+                    },
+                    {
+                      "circBase": "hsa_circ_0009871",
+                      "CircAtlas": "hsa-NPPA-AS1_0004"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA-AS1_0002"
+                    },
+                    {
+                      "circBase": "",
+                      "CircAtlas": "hsa-NPPA-AS1_0003"
+                    }
+                  ]
+                }
+            """)
 
     with ui.card().style('width: 100%;') as card:
         ui.html("Documentation").style('text-align: center; font-size: 16pt;')
@@ -1294,7 +1428,7 @@ class ConstraintModel(BaseModel):
         fields_allowed = ["is", "LIKE", ">", "<"]
 
         if v not in fields_allowed:
-            raise ValueError("Unsupported operator1 provided."
+            raise ValueError("Unsupported operator2 provided."
                              " Supported fields are: "
                              + ', '.join(fields_allowed)+
                              ". Field names are case-sensitive.")
