@@ -137,7 +137,21 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   build1 <- merge(arraystar[,c(2,3)],build1, by=c("build1"), all.y = T)
   message("Merging genome build 2")
   build2 <- merge(arraystar[,c(1,3)],build2, by=c("build2"), all.y = T)
-  
+
+  message("Loading CircRNA Standard Nomenclature (CSN) v1 data")
+
+  csn <- read.csv(paste0("../data/csnv1/",ribocirc_species,"_CSNv1.csv"), sep="\t", header=F)
+  colnames(csn) <- c("CircAtlas","CSNv1","Error","build2","Source")
+  csn <- csn[,c("CSNv1","build2")]
+
+  message("Merging genome build 2 only")
+  build2 <- merge(build2,csn, by=c("build2"), all.x = T)
+
+  # add empty column for old genome build
+  csn <- as.data.frame(rep(NA,nrow(build1)))
+  colnames(csn) <- "CSNv1"
+  build1 <-cbind(build1,csn)
+
   # integrate exorbase, only human data available
   if (species == "homo_sapiens"){
     
@@ -257,6 +271,7 @@ bind_dataframe <- bind_dataframe[,c(
   "riboCIRC",
   "exorBase2",
   "Arraystar",
+  "CSNv1",
   "Chr",
   "Start",
   "Stop",

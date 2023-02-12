@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `circrnadb` (
 	`riboCIRC`	TEXT,
 	`exorBase2`	TEXT,
 	`Arraystar`	TEXT,
+	`CSNv1`	TEXT,
 	`Chr`	TEXT,
 	`Start`	INTEGER,
 	`Stop`	INTEGER,
