@@ -103,17 +103,49 @@ class Util(object):
                 exit(-1)
         return
 
+    def prepare_coordinates(self, coord_list):
+
+        # check line by line
+        fixed_coord_list = []
+
+        for line in coord_list:
+            if ":" in line and "|" in line:
+                fixed_coord_list.append(line)
+            elif "\t" in line:
+                tmp = line.split("\t")
+                if len(tmp) == 3:
+                    fixed_coord_list.append(tmp[0] +
+                                            ":" + tmp[1] +
+                                            "|" + tmp[2])
+
+        return fixed_coord_list
+
     def check_input_return_found_circ_number(self, query_data, input_field):
 
-        # build SQL string
-        sql = "SELECT count(distinct("+input_field+")) FROM " + self.database_table_name + \
-              " WHERE " + input_field + " in ({seq})".format(
-                seq=','.join(['?'] * len(query_data)))
+        # this is a special case, we treat "Coordinates" as some kind of meta input
+        # we break the input into chr, start and stop for the following query
+        if input_field == "Coordinates":
+            # build SQL string
+            coords = self.prepare_coordinates(self, query_data)
 
-        sql_output = self.db_cursor.execute(sql, query_data).fetchall()
+            sql = "SELECT count(distinct(Chr || ':' || " \
+                  "Start || '|' || Stop)) as Coordinates FROM " +\
+                  self.database_table_name + \
+                  " WHERE Chr || ':' || " \
+                  "Start || '|' || Stop in ({seq})".format(
+                    seq=','.join(['?'] * len(coords)))
+            sql_output = self.db_cursor.execute(sql, coords).fetchall()
+
+        else:
+            # build SQL string
+            sql = "SELECT count(distinct("+input_field+")) FROM " +\
+                  self.database_table_name + \
+                  " WHERE " + input_field + " in ({seq})".format(
+                    seq=','.join(['?'] * len(query_data)))
+            sql_output = self.db_cursor.execute(sql, query_data).fetchall()
 
         # return ratio (0->1)
-        return sql_output[0][0]/len(query_data),sql_output[0][0]
+        return sql_output[0][0]/len(query_data), sql_output[0][0]
 
     def database_stats(self):
 
@@ -202,14 +234,23 @@ class Util(object):
         # build SQL string from sanitized(!) field names
         sql_output_field_list = ",".join(output_field_list)
 
-        # build SQL string
-        sql = "SELECT " + sql_output_field_list +\
-              " FROM " + self.database_table_name + \
-              " WHERE " + input_field + " in ({seq})".format(
-                seq=','.join(['?'] * len(query_data)))
+        if input_field == "Coordinates":
+            # build SQL string
+            coords = self.prepare_coordinates(self, query_data)
 
-        print(sql)
-        sql_output = self.db_cursor.execute(sql, query_data).fetchall()
+            sql = "SELECT " +sql_output_field_list+" FROM " +\
+                  self.database_table_name + \
+                  " WHERE Chr || ':' || " \
+                  "Start || '|' || Stop in ({seq})".format(
+                    seq=','.join(['?'] * len(coords)))
+            sql_output = self.db_cursor.execute(sql, coords).fetchall()
+        else:
+            # build SQL string
+            sql = "SELECT " + sql_output_field_list +\
+                  " FROM " + self.database_table_name + \
+                  " WHERE " + input_field + " in ({seq})".format(
+                    seq=','.join(['?'] * len(query_data)))
+            sql_output = self.db_cursor.execute(sql, query_data).fetchall()
 
         return sql_output
 

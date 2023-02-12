@@ -288,7 +288,8 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                               ui_convert_form_values['db_checkbox'].value
                                               )
 
-        if ui_convert_form_values['db_checkbox'].value not in output_fields:
+        if ui_convert_form_values['db_checkbox'].value not in output_fields \
+                and ui_convert_form_values['db_checkbox'].value != "Coordinates":
             output_fields.insert(0, ui_convert_form_values['db_checkbox'].value)
 
     # function called from web query module
@@ -485,8 +486,9 @@ def ui_layout_add_left_drawer(convert=False) -> None:
         ui.label('Select input ID type:').style("text-decoration: underline;")
 
         if convert:
+            # Manually adding Coordinates here, as it's not a real DB field
             ui_convert_form_values['db_checkbox'] = ui.select(
-                util.select_db_columns, value="CircAtlas",
+                ["Coordinates"] + util.select_db_columns, value="Coordinates",
                 label="ID format").style("width: 90%")
 
         with ui.column():
@@ -494,11 +496,11 @@ def ui_layout_add_left_drawer(convert=False) -> None:
             ui.label('Select output fields:').style(
                 "text-decoration: underline;")
 
-            ui.label("Genomic Coordinates")
-            with ui.row():
-                tmp = [ui.checkbox('Chr', value=True),
-                       ui.checkbox('Start', value=True),
-                       ui.checkbox('Stop', value=True)]
+            # ui.label("Genomic Coordinates")
+            # with ui.row():
+            #     tmp = [ui.checkbox('Chr', value=True),
+            #            ui.checkbox('Start', value=True),
+            #            ui.checkbox('Stop', value=True)]
 
             db_entries = []
             ui.label("Databases")
@@ -517,7 +519,7 @@ def ui_layout_add_left_drawer(convert=False) -> None:
                             ui.checkbox(util.select_db_columns[item],
                                         value=True))
 
-            checkbox_list = tmp + db_entries
+            checkbox_list = db_entries
             ui_convert_form_values['db_checkboxes'] = checkbox_list
             ui.label('')
 
@@ -1312,7 +1314,7 @@ async def exception_handler_404(request: Request, exception: Exception) -> Respo
                 style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
             ui.label('Error 404').\
                 style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.label('Page not found.').\
+            ui.label('Page not found').\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
             ui.html("<a href=\"/\"><img src=\"static/error.png\"></a>").style(
                 'text-align: center; padding:10px;')
@@ -1331,7 +1333,7 @@ async def exception_handler_500(request: Request, exception: Exception) -> Respo
                 style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
             ui.label('Error 500').\
                 style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.label('Internal server error.').\
+            ui.label('Internal server error').\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
             ui.html("<a href=\"/\"><img src=\"static/error.png\"></a>").style(
                 'text-align: center; padding:10px;')
