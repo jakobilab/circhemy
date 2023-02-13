@@ -19,9 +19,9 @@ import sqlite3
 class Util(object):
 
     # global settings
-    software_version = "0.0.2-dev"
+    software_version = "0.0.3-dev"
 
-    database_version = "DB-0.0.2-dev"
+    database_version = "DB-0.0.3-dev"
 
     program_name = "circhemy"
 
@@ -50,6 +50,7 @@ class Util(object):
                             "rn6"]
 
     select_db_columns = [
+        "CSNv1",
         "circBase",
         "CircAtlas",
         "circRNADB",
@@ -83,6 +84,7 @@ class Util(object):
                         "Start": "",
                         "Stop": "",
                         "Genome": "",
+                        "CSNv1": "",
                         "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?",
                         "Species": ""
                         }
