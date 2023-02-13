@@ -411,6 +411,31 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                         + " target=\"_blank\">" \
                                         + str(item[0]) + "</a>"
 
+                elif item[1] == "CSNv1" and not input_id \
+                        and line[idx['Genome']] in ["hg38", "mm10", "rn6"]:
+                    # only if we use the new genome builds
+                    # we re-use the genome browser integration but add the
+                    # custom BED files
+
+                    # build pos format: chrXZY:1234-5789
+                    pos = line[idx['Chr']] + ":" + \
+                          str(line[idx['Start']]) + \
+                          "-" + \
+                          str(line[idx['Stop']])
+
+                    build = line[idx['Genome']]
+
+                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
+                                        "\" href=\"" + util.external_db_urls[
+                                            "Genome-Browser"] \
+                                        + "db=" + build + "&" \
+                                        + "pos=" + pos  \
+                                        + "&hgct_customText=" +\
+                                        util.external_db_urls["CSNv1"]\
+                                        + build + ".bed\"" \
+                                        + " target=\"_blank\">" \
+                                        + str(item[0]) + "</a>"
+
                 elif item[0] != "NA" \
                         and util.external_db_urls[item[1]] \
                         and not input_id:

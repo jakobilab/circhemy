@@ -84,7 +84,7 @@ class Util(object):
                         "Start": "",
                         "Stop": "",
                         "Genome": "",
-                        "CSNv1": "",
+                        "CSNv1": "https://static.jakobilab.org/circhemy/",
                         "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?",
                         "Species": ""
                         }
