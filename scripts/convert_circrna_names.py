@@ -217,7 +217,13 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
             bedtools_string = bedtools_string + "\t".join([item_chr,
                                                            str(circ_item_start),
                                                            str(circ_item_stop),
-                                                           line[1]]
+                                                           line[1],
+                                                           '0',
+                                                           circ_strand,
+                                                           str(circ_item_start),
+                                                           str(circ_item_stop),
+                                                           "255,0,0"
+                                                           ]
                                                           ) + "\n"
 
     # we are done with BLAST processing
@@ -296,7 +302,7 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
     # merge contained exons, i.e. if exon 5 is 500 bp and exon 3 if 100 bp
     # completely within exon 5 only keep exon 5
-    merged_blast_results = bed_obj.merge(c="4", o="first")
+    merged_blast_results = bed_obj.merge(c="4,5,6,7,8,9", o="first,first,first,first,first,first")
 
     debug_bed_file.write(str(merged_blast_results))
 
@@ -639,10 +645,10 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
     if single_intron_check:
         return "circ" + name[0] + "(NE)", \
-            max(distance_watcher_start, distance_watcher_stop)
+            max(distance_watcher_start, distance_watcher_stop), circ_strand
     else:
         return "circ"+name[0]+"(" + ",".join(return_list) + ")",\
-            max(start_fit, stop_fit)
+            max(start_fit, stop_fit), circ_strand
 
 
 # process file function
@@ -818,11 +824,22 @@ def process_circrna_file(filename,
                                            intersect_bed_file=result,
                                            bed_strand=bed_strand)
 
+            # circrna_line = "\t".join([circ_chr,
+            #                                  str(circ_start),
+            #                                  str(circ_stop),
+            #                                  str(new_id[0])
+            #                           + " / " + circrna_id])
+
             circrna_line = "\t".join([circ_chr,
-                                             str(circ_start),
-                                             str(circ_stop),
-                                             str(new_id[0])
-                                      + " / " + circrna_id])
+                                      str(circ_start),
+                                      str(circ_stop),
+                                      str(new_id[0]) + "|" + circrna_id,
+                                      "0",
+                                      new_id[2],
+                                      str(circ_start),
+                                      str(circ_stop),
+                                      "0,0,255"]
+                                     )
 
             debug_bed_file.write(circrna_line+"\n")
 
