@@ -27,15 +27,20 @@ fi
 
 echo "Loading base SQL table schema."
 
-sqlite3 ../data/circconvert.sqlite3 < ../data/circrnadb_schema.sql
+sqlite3 ../data/circhemy.sqlite3 < ../data/circhemy_schema.sql
 
 echo "SQL database schema ready, starting data import."
 
-sqlite3 ../data/circconvert.sqlite3 << EOF
+commandfile=$(mktemp)
+
+# create temporary init script
+cat <<EOF > $commandfile
 .mode csv
 .separator "\t"
-.import ../data/circrnadb_data.csv circrnadb
+.import /dev/stdin circhemy
 VACUUM;
 EOF
+
+bzip2 -d -c ../data/circhemy_data.csv.bz2 | sqlite3 --init "$commandfile" ../data/circhemy.sqlite3
 
 echo "Data import finished."

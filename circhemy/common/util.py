@@ -27,16 +27,16 @@ class Util(object):
 
     support_email = program_name+"@jakobilab.org"
 
-    support_web = "https://github.com/jakobilab/circconvert/ "+\
+    support_web = "https://github.com/jakobilab/circhemy/ "+\
                   program_name +\
                   "/issues/new"
 
     news_url = "https://redmine.jakobilab.org/projects/circhemy/" \
                "news.atom?key=c616b9fb231445ac4ca65d94db1d3207382798e9"
 
-    database_location = "../data/circconvert.sqlite3"
+    database_location = "../data/circhemy.sqlite3"
 
-    database_table_name = "circrnadb"
+    database_table_name = "circhemy"
 
     database_species_list = ["homo_sapiens",
                              "mus_musculus",

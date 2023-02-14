@@ -19,6 +19,7 @@
 # let's now get the command line arguments
 
 options(echo=FALSE)
+suppressMessages(suppressWarnings(library(R.utils)))
 
 process_input_tables = function(data_file, column_names, species, bed_file, ribocirc_species){
   
@@ -282,4 +283,7 @@ bind_dataframe <- bind_dataframe[,c(
 
 # write to CSV file for easy SQLite3 export
 # no column names since we set those in the SQL schema
-write.table(bind_dataframe, file= "../data/circrnadb_data.csv", row.names=F, quote = F, col.names = F, sep="\t")
+write.table(bind_dataframe, file= "../data/circhemy_data.csv", row.names=F, quote = F, col.names = F, sep="\t")
+
+# create a nice, small package, it's all text data after all
+bzip2("../data/circhemy_data.csv")
