@@ -42,14 +42,7 @@ from web import svg
 import feedparser
 from dateutil import tz
 
-import time
-import textwrap
-from subprocess import check_output
 from dateutil.parser import parse
-
-import ssl
-# if hasattr(ssl, '_create_unverified_context'):
-#     ssl._create_default_https_context = ssl._create_unverified_context
 
 from io import StringIO
 from html.parser import HTMLParser
