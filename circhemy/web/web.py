@@ -194,18 +194,31 @@ def ui_result_table_get_coordinates(input_list=[]):
 
 
 def ui_load_example_data() -> None:
-    ui_convert_form_values['textfield'].value = "hsa-MYH9_0004\n" \
-                                     "hsa-MYH9_0005\n" \
-                                     "hsa-MYH10_0003\n" \
-                                     "hsa-MYH10_0016\n" \
-                                     "hsa-MYH10_0044\n" \
-                                     "hsa-MYH10_0075\n" \
-                                     "hsa-MYH10_0018\n" \
-                                     "hsa-MYH10_0002\n" \
-                                     "hsa-MYH14_0011\n" \
-                                     "hsa-MYH14_0013\n" \
-                                     "hsa-MYH14_0010\n" \
-                                     "hsa-MYH9_0116"
+    ui_convert_form_values['textfield'].value = \
+                                        "chr1:100121447|100132793\n" \
+                                        "chr1:100121550|100122379\n" \
+                                        "chr1:100122380|100125942\n" \
+                                        "chr1:100123210|100125942\n" \
+                                        "chr1:1001237|1001530\n" \
+                                        "chr1:100123872|100125942\n" \
+                                        "chr1:100133404|100133583\n" \
+                                        "chr1:100136882|100137085\n" \
+                                        "chr1:100136882|100139711\n" \
+                                        "chr1:100136882|100140514\n" \
+                                     # "hsa-MYH9_0004\n" \
+                                     # "hsa-MYH9_0005\n" \
+                                     # "hsa-MYH10_0003\n" \
+                                     # "hsa-MYH10_0016\n" \
+                                     # "hsa-MYH10_0044\n" \
+                                     # "hsa-MYH10_0075\n" \
+                                     # "hsa-MYH10_0018\n" \
+                                     # "hsa-MYH10_0002\n" \
+                                     # "hsa-MYH14_0011\n" \
+                                     # "hsa-MYH14_0013\n" \
+                                     # "hsa-MYH14_0010\n" \
+                                     # "hsa-MYH9_0116"
+
+
 
 
 def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
@@ -482,11 +495,15 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 def ui_update_found_circrnas(data) -> str:
     circrna_list = data.split('\n')
 
-    ratio, found = util.check_input_return_found_circ_number(util,input_field=
+    ratio, found = util.check_input_return_found_circ_number(util, input_field=
     ui_convert_form_values['db_checkbox'].value, query_data=circrna_list)
 
-    ui_convert_form_values['circrna_found'].value = ratio
-    ui_convert_form_values['circrna_found'].set_visibility(True)
+    if found > 0:
+        ui_convert_form_values['circrna_found'].value = ratio
+        ui_convert_form_values['circrna_found'].set_visibility(True)
+    else:
+        ui_convert_form_values['circrna_found'].value = ratio
+        ui_convert_form_values['submit_button'].props("disabled=true")
 
     return str(found) + " of " + str(len(circrna_list)) + " CircRNA IDs found"
 
@@ -566,11 +583,11 @@ def ui_layout_add_left_drawer(convert=False) -> None:
 
 def ui_layout_add_head_html() -> None:
     ui.add_head_html(
-        (Path(__file__).parent / 'web' / 'static' / 'header.html').read_text())
+        (Path(__file__).parent / 'static' / 'header.html').read_text())
     ui.add_head_html(
         f'<style>{HtmlFormatter(nobackground=True).get_style_defs(".codehilite")}</style>')
     ui.add_head_html(
-        f"<style>{(Path(__file__).parent / 'web' / 'static' / 'style.css').read_text()}</style>")
+        f"<style>{(Path(__file__).parent / 'static' / 'style.css').read_text()}</style>")
 
 
 def ui_layout_generate_logo() -> None:
