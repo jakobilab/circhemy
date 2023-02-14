@@ -31,12 +31,13 @@ from pygments.formatters import HtmlFormatter
 import re
 
 # own util functions
-import common.util
+import circhemy.common.util as common
+
 
 # core nicegui and web imports
 from fastapi import Request, Response
 from nicegui import Client, app, ui
-from web import svg
+from . import svg
 
 # imports for parsing the Redmine news feed
 import feedparser
@@ -48,12 +49,12 @@ from io import StringIO
 from html.parser import HTMLParser
 
 # create util instance for the web app
-util = common.util.Util
+util = common.Util
 
 # add static files for fonts and favicon
-app.add_static_files('/favicon', Path(__file__).parent / 'web' / 'favicon')
-app.add_static_files('/fonts', Path(__file__).parent / 'web' / 'fonts')
-app.add_static_files('/static', Path(__file__).parent / 'web' / 'static')
+app.add_static_files('/favicon', Path(__file__).parent / 'favicon')
+app.add_static_files('/fonts', Path(__file__).parent / 'fonts')
+app.add_static_files('/static', Path(__file__).parent / 'static')
 
 # set up global variables
 
@@ -70,16 +71,17 @@ util.setup_database(util, util.database_location)
 ui_convert_form_values['chart'], ui_convert_form_values['dbsize'],\
     ui_convert_form_values['chart2'] = util.database_stats(util)
 
-# run main application
-ui.run(title=util.program_name,
-       show=False,
-       exclude="audio,chart colors,interactive_image,joystick,"
-                "keyboard,log,scene,video",
-       binding_refresh_interval=1.0
-       )
+
+def main():
+    # run main application
+    ui.run(title=util.program_name,
+           show=False,
+           exclude="audio,chart colors,interactive_image,joystick,"
+                   "keyboard,log,scene,video",
+           binding_refresh_interval=1.0
+           )
 
 # util functions
-
 
 class RedmineParser(HTMLParser):
     def __init__(self):
