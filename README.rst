@@ -46,7 +46,7 @@ the circRNA database to extract circRNAs fulfilling a user-defined set of
 constraints.
 
 Installation (command line version)
-------------
+------------------------------------
 
 The circhemy CLI package is written in Python3 (>=3.7) and consists of two
 core modules, namely ``convert`` and ``query``. The command line version requires
@@ -77,7 +77,7 @@ Additionally, this repository offers the latest development version:
 
 
 Modules
--------------
+---------
 
 Circhemy currently offers two modules:
 
