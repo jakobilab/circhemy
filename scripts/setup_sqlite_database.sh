@@ -43,4 +43,5 @@ EOF
 
 bzip2 -d -c ../data/circhemy_data.csv.bz2 | sqlite3 --init "$commandfile" ../data/circhemy.sqlite3
 
-echo "Data import finished."
+echo "Data import finished, creating bzipped2 file for shipping"
+bzip2 -f -k --best ../data/circhemy.sqlite3
