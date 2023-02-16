@@ -120,7 +120,7 @@ The convert module is able to convert from a range of input circRNA ID into
 different one or more database identifiers.
 
 Example: Convert a list of CircAtlas IDs into circBase and
-into CircPedia2 IDs, but also output CircAtlas IDs.
+into CircPedia2 IDs, including the Genome build.
 
 .. code-block:: console
 
@@ -129,7 +129,7 @@ into CircPedia2 IDs, but also output CircAtlas IDs.
       -H 'Content-Type: application/json'
       -d '{
           "input": "CircAtlas",
-          "output": ["CircPedia2","CircAtlas"],
+          "output": ["CircPedia2","CircAtlas","Genome"],
           "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
           }'
 
@@ -148,15 +148,21 @@ Grid tables for any other postprocessing:
           "headerName": "Circpedia2",
           "field": "Circpedia2"
         }
+        {
+          "headerName": "Genome",
+          "field": "Genome"
+        }
       ],
       "rowData": [
         {
           "circBase": "hsa_circ_0004470",
           "Circpedia2": "HSA_CIRCpedia_36582"
+          "Genome": "hg38"
         },
         {
           "circBase": "hsa_circ_0004470",
           "Circpedia2": "HSA_CIRCpedia_36582"
+          "Genome": "hg19"
         }
       ]
     }
@@ -167,8 +173,8 @@ Query module
 The query module is able to retrieve circRNA IDs from the internal database that
 fulfil a set of user-defined constraints.
 
-Example: Retrieve all circRNAs with a CircAtlas ID containing *atf* or *xbp1*,
-return the IDs in circBase and circAtlas format:
+Example: Retrieve all circRNAs with a CircAtlas ID containing *nppa* in the
+species homo sapiens, return the IDs in circBase and circAtlas format:
 
 .. code-block:: console
 
@@ -176,94 +182,94 @@ return the IDs in circBase and circAtlas format:
                   'https://circhemy.jakobilab.org/api/query'
                   -H 'accept: application/json'
                   -H 'Content-Type: application/json'
-                  -d '{{
-                  "input": [
-                    {
-                      "query": "pdia4",
-                      "field": "CircAtlas",
-                      "operator1": "AND",
-                      "operator2": "LIKE"
-                    },
-                    {
-                      "query": "rattus_norvegicus",
-                      "field": "species",
-                      "operator1": "AND",
-                      "operator2": "IS"
-                    }
-                  ],
-                  "output": [
-                    "circBase",
-                    "CircAtlas"
-                  ]
-                }}'
+                  -d '{
+                      "input": [
+                        {
+                          "query": "nppa",
+                          "field": "CircAtlas",
+                          "operator1": "AND",
+                          "operator2": "LIKE"
+                        },
+                        {
+                          "query": "homo_sapiens",
+                          "field": "Species",
+                          "operator1": "AND",
+                          "operator2": "is"
+                        }
+                      ],
+                      "output": [
+                        "circBase",
+                        "CircAtlas"
+                      ]
+                    }'
 
 Output is returned as JSON-formatted string which can directly be used for AG
 Grid tables for any other postprocessing:
 
 .. code-block:: json
 
-                {
-                  "columnDefs": [
-                    {
-                      "headerName": "circBase",
-                      "field": "circBase"
-                    },
-                    {
-                      "headerName": "CircAtlas",
-                      "field": "CircAtlas"
-                    }
-                  ],
-                  "rowData": [
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0001"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0001"
-                    },
-                    {
-                      "circBase": "hsa_circ_0009871",
-                      "CircAtlas": "hsa-NPPA-AS1_0004"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0003"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0001"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0001"
-                    },
-                    {
-                      "circBase": "hsa_circ_0009871",
-                      "CircAtlas": "hsa-NPPA-AS1_0004"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0003"
-                    }
-                  ]
-                }
+    {
+      "columnDefs": [
+        {
+          "headerName": "circBase",
+          "field": "circBase"
+        },
+        {
+          "headerName": "CircAtlas",
+          "field": "CircAtlas"
+        }
+      ],
+      "rowData": [
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA_0001"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA_0002"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA-AS1_0001"
+        },
+        {
+          "circBase": "hsa_circ_0009871",
+          "CircAtlas": "hsa-NPPA-AS1_0004"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA-AS1_0002"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA-AS1_0003"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA_0001"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA_0002"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA-AS1_0001"
+        },
+        {
+          "circBase": "hsa_circ_0009871",
+          "CircAtlas": "hsa-NPPA-AS1_0004"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA-AS1_0002"
+        },
+        {
+          "circBase": "",
+          "CircAtlas": "hsa-NPPA-AS1_0003"
+        }
+      ]
+    }
 
 
 .. |downloads| image:: https://pepy.tech/badge/circtools
