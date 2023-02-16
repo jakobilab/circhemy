@@ -29,6 +29,7 @@ from pygments.formatters import HtmlFormatter
 
 # regex for circRNA parsing
 import re
+import os
 
 # own util functions
 import circhemy.common.util as common
@@ -807,6 +808,9 @@ async def page_application_display_results():
     if 'mode' in ui_convert_form_values:
 
         processed_output,ui_convert_form_values['table2'] = ui_generate_result_table()
+
+        if not os.path.isdir("tmp/"):
+            os.makedirs("tmp/")
 
         try:
             with open('tmp/' + session_id + ".csv", 'w') as f:
