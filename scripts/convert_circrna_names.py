@@ -645,10 +645,11 @@ def process_blast_results(file_name, debug_bed_file, intersect_bed_file, bed_str
 
     if single_intron_check:
         return "circ" + name[0] + "(NE)", \
-            max(distance_watcher_start, distance_watcher_stop), circ_strand
+            max(distance_watcher_start, distance_watcher_stop), circ_strand,\
+            name[0]
     else:
         return "circ"+name[0]+"(" + ",".join(return_list) + ")",\
-            max(start_fit, stop_fit), circ_strand
+            max(start_fit, stop_fit), circ_strand, name[0]
 
 
 # process file function
@@ -856,6 +857,7 @@ def process_circrna_file(filename,
 
             result_dict[circrna_id] = {"new_id": new_id[0],
                                        "error": new_id[1],
+                                       "gene": new_id[2],
                                        "coordinates": str(circrna_coordinates),
                                        "source": "BLAST_HIT"}
 
@@ -1185,6 +1187,7 @@ def process_remaining_circrnas(filename,
 
             result_dict[circrna] = {"new_id": new_id,
                                     "error": max(abs(start_fit), abs(stop_fit)),
+                                    "gene": gene_name,
                                     "coordinates": coordinates,
                                     "source": "BEDTOOLS"}
 
