@@ -12,8 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import os
 import sqlite3
+import circhemy
 
 
 class Util(object):
@@ -34,7 +35,7 @@ class Util(object):
     news_url = "https://redmine.jakobilab.org/projects/circhemy/" \
                "news.atom?key=c616b9fb231445ac4ca65d94db1d3207382798e9"
 
-    database_location = "../data/circhemy.sqlite3"
+    database_location = circhemy.__path__[0]+"/data/circhemy.sqlite3"
 
     database_table_name = "circhemy"
 
@@ -201,6 +202,19 @@ class Util(object):
         return chart_dict, dbsize, chart2_dict
 
     def setup_database(self, database):
+
+        # check if there is a .bz2 version of the database
+        # if yes, this is the first time circhemy runs
+        # we have to unpack it one time
+
+        if os.path.isfile(database+".bz2"):
+            print("This is the first run of circhemy, local SQLite3 database "
+                  "is being unpacked for the first use.")
+            print("You should only see this message once.")
+            os.system("bunzip2 " + database+".bz2")
+            print("Done.")
+            # test and write note
+
         self.db_connection = sqlite3.connect(database)
 
         # SQLite optimizations from

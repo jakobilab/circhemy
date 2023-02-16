@@ -11,3 +11,6 @@ include setup.py
 
 # Include the data files
 recursive-include circhemy/web *
+
+# Include database file
+include circhemy/data/circhemy.sqlite3.bz2
