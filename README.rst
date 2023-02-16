@@ -72,7 +72,7 @@ Additionally, this repository offers the latest development version:
 
 ::
 
-    pip3 install git+https://github.com/jakobilab/circhemy.git --user
+    pip3 install git+https://github.com/jakobilab/circhemy.git
 
 
 
