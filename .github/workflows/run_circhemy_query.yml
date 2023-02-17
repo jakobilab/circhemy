@@ -18,7 +18,7 @@ jobs:
 #        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12]
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 #        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-    name: Python ${{ matrix.python-version }} | ${{ matrix.os }}
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
     - name: Create files
       uses: actions/checkout@v3
@@ -40,15 +40,13 @@ jobs:
       run: |
          circhemy --version
          which circhemy
-         find / -iname "*circhemy.sqlite3.bz2*"
-#    - name: Manually unpack database and remove bzipped file
-#      run: |
-#         circhemy --version
-#         which circhemy
-#    - name: Running circhemy convert test
-#      run: |
-#         cd circhemy_detect_ci_input_data
-#         circhemy detect @samplesheet -ss -T 2 -D -an chr1.gtf -A chr1.fa -B @bam_files.txt -M -Nr 2 2 -fg -G -F -L 20 -O circhemy_ci -k
+    - name: Unzip SQLite database
+      run: |
+         bunzip /home/runner/work/circhemy/circhemy/circhemy/data/circhemy.sqlite3.bz2
+    - name: Running circhemy convert test
+      run: |
+         circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > input
+         cat input
 #    - name: Checking generated output against master output
 #      run: |
 #         cd circhemy_detect_ci_input_data
