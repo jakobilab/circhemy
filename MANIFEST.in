@@ -17,3 +17,4 @@ include circhemy/data/circhemy.sqlite3.bz2
 
 # Include test output for validation
 include circhemy/data/circhemy_query.results
+include circhemy/data/circhemy_convert.results

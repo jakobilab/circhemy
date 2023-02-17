@@ -1,4 +1,4 @@
-name: circhemy query CI
+name: circhemy convert CI
 
 on:
   push:
@@ -44,11 +44,11 @@ jobs:
       run: |
          CIRCHEMY_DB_PATH=`python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy.sqlite3.bz2
          bunzip2 $CIRCHEMY_DB_PATH
-    - name: Running circhemy query test
+    - name: Running circhemy convert test
       run: |
-         circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > query_output
+         cat `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_query.results | circhemy convert  -q STDIN -i circBase -o CircAtlas circBase Genome > convert_output
     - name: Checking generated output against gold output
       run: |
-         diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_query.results query_output
+         diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_convert.results convert_output
 
     runs-on: ${{ matrix.os }}
