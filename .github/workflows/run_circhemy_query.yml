@@ -43,7 +43,7 @@ jobs:
     - name: Unzip SQLite database
       run: |
          CIRCHEMY_DB_PATH=`python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy.sqlite3.bz2
-         bunzip2 CIRCHEMY_DB_PATH
+         bunzip2 $CIRCHEMY_DB_PATH
     - name: Running circhemy query test
       run: |
          circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > query_output
