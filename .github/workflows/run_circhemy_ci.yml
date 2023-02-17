@@ -1,4 +1,4 @@
-name: circhemy convert CI
+name: circhemy convert/query CI
 
 on:
   push:
@@ -50,5 +50,11 @@ jobs:
     - name: Checking generated output against gold output
       run: |
          diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_convert.results convert_output
+    - name: Running circhemy query test
+      run: |
+         circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > query_output
+    - name: Checking generated output against gold output
+      run: |
+         diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_query.results query_output
 
     runs-on: ${{ matrix.os }}
