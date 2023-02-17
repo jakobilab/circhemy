@@ -42,7 +42,7 @@ jobs:
          which circhemy
     - name: Unzip SQLite database
       run: |
-         bunzip /home/runner/work/circhemy/circhemy/circhemy/data/circhemy.sqlite3.bz2
+         bunzip2 /home/runner/work/circhemy/circhemy/circhemy/data/circhemy.sqlite3.bz2
     - name: Running circhemy convert test
       run: |
          circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > input
