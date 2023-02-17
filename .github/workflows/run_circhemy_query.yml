@@ -42,6 +42,7 @@ jobs:
          which circhemy
     - name: Unzip SQLite database
       run: |
+         python3 -c "import site; print(site.getsitepackages()[0])"
          bunzip2 /opt/hostedtoolcache/Python/3.10.9/x64/lib/python3.10/site-packages/circhemy/data/circhemy.sqlite3.bz2
     - name: Running circhemy convert test
       run: |
