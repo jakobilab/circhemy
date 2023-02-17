@@ -289,6 +289,16 @@ Grid tables for any other postprocessing:
     :scale: 100%
     :target: https://badge.fury.io/py/circhemy
 
+.. |pypi| image:: https://github.com/jakobilab/circhemy/actions/workflows/run_circhemy_ci.yml/badge.svg
+    :alt: CI tests
+    :scale: 100%
+    :target: https://github.com/jakobilab/circhemy/actions/workflows/run_circhemy_ci.yml
+
+.. |pypi| image:: https://github.com/jakobilab/circhemy/actions/workflows/build_docker.yml/badge.svg
+    :alt: Docker build process
+    :scale: 100%
+    :target: https://github.com/jakobilab/circhemy/actions/workflows/build_docker.yml
+
 
 About
 -------------
