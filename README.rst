@@ -3,7 +3,7 @@
 
 **The alchemy of circular RNA ID conversion**
 
-.. image:: https://github.com/jakobilab/circhemy/raw/main/circhemy/web/static/logo2.png
+.. image:: https://github.com/jakobilab/circhemy/raw/main/circhemy/web/static/logo_small.png
    :alt: circhemy - The alchemy of circular RNA ID conversion
 
 |downloads| |pypi|
