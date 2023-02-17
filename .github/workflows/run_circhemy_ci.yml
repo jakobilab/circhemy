@@ -1,4 +1,4 @@
-name: circhemy CI tests
+name: CI tests
 
 on:
   push:
