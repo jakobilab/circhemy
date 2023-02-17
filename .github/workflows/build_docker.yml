@@ -1,11 +1,17 @@
 name: Build and Publish Docker Container
 
+#on:
+#  # run it on push to the default repository branch
+#  push:
+#    branches: [main]
+#  # run it during pull request
+#  pull_request:
+
+# on new tag / before release
 on:
-  # run it on push to the default repository branch
   push:
-    branches: [main]
-  # run it during pull request
-  pull_request:
+    tags:
+      - '*'
 
 jobs:
   # define job to build and publish docker image
