@@ -1,0 +1,63 @@
+name: Circhemy CI
+
+on:
+  push:
+  pull_request:
+#  schedule:
+#    - cron: '0 7 * * *'
+
+concurrency:
+  group: ci-tests-${{ github.ref }}-1
+  cancel-in-progress: true
+
+jobs:
+  Main:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+    name: Python ${{ matrix.python-version }} | ${{ matrix.os }}
+    steps:
+    - name: Create files
+      uses: actions/checkout@v3
+      with:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: 'x64'
+    - name: Updating setuptools
+      run: |
+         python3 -m pip install -U pip setuptools
+    - name: Updating pip
+      run: |
+         python3 -m pip install --upgrade pip
+    - name: Installing circhemy & Python dependencies
+      run: |
+         python3 -m pip install ./ -v
+    - name: Check if circhemy starts
+      run: |
+         circhemy --version
+         which circhemy
+#    - name: Manually unpack database and remove bzipped file
+#      run: |
+#         circhemy --version
+#         which circhemy
+#    - name: Running circhemy convert test
+#      run: |
+#         cd circhemy_detect_ci_input_data
+#         circhemy detect @samplesheet -ss -T 2 -D -an chr1.gtf -A chr1.fa -B @bam_files.txt -M -Nr 2 2 -fg -G -F -L 20 -O circhemy_ci -k
+#    - name: Checking generated output against master output
+#      run: |
+#         cd circhemy_detect_ci_input_data
+#         cd circhemy_ci
+#         ls -la
+#         wc -l *
+#         diff ../circhemy_master/LinearCount LinearCount
+#         if [ "$RUNNER_OS" == "Linux" ]; then
+#           sha1sum -c ../circhemy_master/sha1sums.txt
+#         elif [ "$RUNNER_OS" == "macOS" ]; then
+#           shasum -c ../circhemy_master/sha1sums.txt
+#         fi
+
+    runs-on: ${{ matrix.os }}
