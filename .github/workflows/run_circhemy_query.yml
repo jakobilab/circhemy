@@ -49,6 +49,6 @@ jobs:
          circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > query_output
     - name: Checking generated output against gold output
       run: |
-         diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_convert.results query_output
+         diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_query.results query_output
 
     runs-on: ${{ matrix.os }}
