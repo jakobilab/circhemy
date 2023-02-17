@@ -1,4 +1,4 @@
-name: circhemy convert/query CI
+name: circhemy CI tests
 
 on:
   push:
