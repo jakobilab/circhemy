@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04]
 #        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.7"]
 #        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
@@ -42,23 +42,13 @@ jobs:
          which circhemy
     - name: Unzip SQLite database
       run: |
-         CIRCHEMY_PATH=`python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy.sqlite3.bz2
-         bunzip2 $CIRCHEMY_PATH
-    - name: Running circhemy convert test
+         CIRCHEMY_DB_PATH=`python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy.sqlite3.bz2
+         bunzip2 CIRCHEMY_DB_PATH
+    - name: Running circhemy query test
       run: |
-         circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > input
-         cat input
-#    - name: Checking generated output against master output
-#      run: |
-#         cd circhemy_detect_ci_input_data
-#         cd circhemy_ci
-#         ls -la
-#         wc -l *
-#         diff ../circhemy_master/LinearCount LinearCount
-#         if [ "$RUNNER_OS" == "Linux" ]; then
-#           sha1sum -c ../circhemy_master/sha1sums.txt
-#         elif [ "$RUNNER_OS" == "macOS" ]; then
-#           shasum -c ../circhemy_master/sha1sums.txt
-#         fi
+         circhemy query -o  circBase -b *atf6 -g hg38 | cut -f1 > query_output
+    - name: Checking generated output against gold output
+      run: |
+         diff `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_convert.results query_output
 
     runs-on: ${{ matrix.os }}

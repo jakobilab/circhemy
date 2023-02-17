@@ -14,3 +14,6 @@ recursive-include circhemy/web *
 
 # Include database file
 include circhemy/data/circhemy.sqlite3.bz2
+
+# Include test output for validation
+include circhemy/data/circhemy_convert.results
