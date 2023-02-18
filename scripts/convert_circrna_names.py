@@ -1422,6 +1422,7 @@ if __name__ == "__main__":
         for circrna in result_dict:
             out_file.write("\t".join([circrna,
                                       result_dict[circrna]['new_id'],
+                                      result_dict[circrna]['gene'],
                                       str(result_dict[circrna]['error']),
                                       result_dict[circrna]['coordinates'],
                                       result_dict[circrna]['source']
