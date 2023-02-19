@@ -857,7 +857,7 @@ def process_circrna_file(filename,
 
             result_dict[circrna_id] = {"new_id": new_id[0],
                                        "error": new_id[1],
-                                       "gene": new_id[2],
+                                       "gene": new_id[3],
                                        "coordinates": str(circrna_coordinates),
                                        "source": "BLAST_HIT"}
 
