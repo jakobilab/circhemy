@@ -60,7 +60,7 @@ core modules, namely ``convert`` and ``query``. The command line version require
 only one external dependency, ``sqlite3``, for access to the internal SQLite3
 database with circRNA ID data
 
-Installation is managed through ``pip3 install circhemy`` or ``python3 setup.py
+Installation is managed through ``python3 -m pip install circhemy`` or ``python3 setup.py
 install`` when installed from the cloned GitHub repository. No sudo access is
 required if the installation is executed with ``--user`` which will install the
 package in a user-writeable folder. The binaries should be installed
@@ -73,13 +73,13 @@ The latest release version of circhemy can be installed via pip:
 
 .. code-block:: console
 
-    pip3 install circhemy
+    python3 -m pip install circhemy
 
 Additionally, this repository offers the latest development version:
 
 .. code-block:: console
 
-    pip3 install git+https://github.com/jakobilab/circhemy.git
+    python3 -m pip install git+https://github.com/jakobilab/circhemy.git
 
 
 
