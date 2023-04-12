@@ -25,14 +25,14 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   
   message(paste0("Processing species: ", species))
   
-  message("Loading circAtlas table")
-  # read orginal circatlas data, remove first line with broken headers
+  message("Loading CircAtlas2 table")
+  # read orginal CircAtlas2 data, remove first line with broken headers
   input <- read.csv(data_file, sep="\t", header=F, skip=1)
   
   # fix headers
   colnames(input) <- column_names
 
-  message("Loading circAtlas BED file")
+  message("Loading CircAtlas2 BED file")
   
   # read BED file for strand information
   bed <- read.csv(bed_file, sep="\t", header=T)
@@ -41,9 +41,9 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   strand_info <- bed[,c(4,5)]
   
   # fix column names
-  colnames(strand_info) <- c("Strand","CircAtlas")
+  colnames(strand_info) <- c("Strand","CircAtlas2")
 
-  message("Merging circAtlas main tables with BED file")
+  message("Merging CircAtlas2 main tables with BED file")
   # merge BED data with other data to recover strand information where possible
   # keep input column order -> https://stackoverflow.com/questions/17574882/how-to-prevent-merge-from-reordering-columns 
   input_with_strand <- merge(input,strand_info, all = T)[, union(names(input), names(strand_info))]
@@ -56,13 +56,28 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   # assign species name to column
   input_with_strand$Species <- species
 
+  message("Pre-reading CSNv1 data to get gene names")
+
+  csn <- read.csv(paste0("../circhemy/data/csnv1/",ribocirc_species,"_CSNv1.csv"), sep="\t", header=F)
+  colnames(csn) <- c("CircAtlas2","CSNv1","Error","build2","Source")
+  csn <- csn[,c("CSNv1","build2")]
+
+  # We will get the gene names from the BLAST results
+  csn$Gene <- csn$CSNv1
+  csn$Gene <- gsub("circ", "", csn$Gene)
+  csn$Gene <- gsub("\\(.*", "", csn$Gene)
+
+  csn$CSNv1 <- NULL
+  colnames(csn) <- c(colnames(input_with_strand)[3], "Gene")
+
+  input_with_strand <- merge(csn,input_with_strand, by=colnames(input_with_strand)[3], all.y = T)[, union(names(input_with_strand), "Gene")]
   message("Loading circ2disease table")
   
   # include circ2disease data
-  circ2disase <- circ2disase <- read.csv("../data/circ2disease/circ2disease_association_curated.csv", sep=",", header=T)[,c("circBase","Pubmed")]
+  circ2disease <- read.csv("../circhemy/data/circ2disease/circ2disease_association_curated.csv", sep=",", header=T)[,c("circBase","Pubmed")]
   
   # replace N/A string with actual NA value
-  circ2disase <- as.data.frame(lapply(circ2disase, function(y) gsub("^N/A$", NA, y)))
+  circ2disease <- as.data.frame(lapply(circ2disease, function(y) gsub("^N/A$", NA, y)))
   
   message("Merging circ2disease data")
   
@@ -70,11 +85,11 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   # this results in a few circRNAs to be duplicated,
   # as they have more then one Pubmed result
 
-  input_with_strand <- merge(circ2disase, input_with_strand, by.x=c("circBase"),  by.y=c("circBase"), all.y=T)[, union(names(circ2disase), names(input_with_strand))]
+  input_with_strand <- merge(circ2disease, input_with_strand, by.x=c("circBase"),  by.y=c("circBase"), all.y=T)[, union(names(circ2disease), names(input_with_strand))]
 
   message("Loading ribocirc table")
   
-  ribocirc <- read.csv("../data/ribocirc/All_condition_independent_riboCIRC_meta.txt", sep="\t", header=T)
+  ribocirc <- read.csv("../circhemy/data/ribocirc/All_condition_independent_riboCIRC_meta.txt", sep="\t", header=T)
   
   ribocirc$Genome_pos<-gsub("-","|",ribocirc$Genome_pos)
   
@@ -106,7 +121,7 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
 
     # we only need first two columns: circbank ID and circbase
     # as we can match 100% of the rows via circbase
-    circbank <- read.csv(paste0("../data/circbank/circBank_circrna_annotation.txt"), sep="\t", header=T)[,c(1,2)]
+    circbank <- read.csv(paste0("../circhemy/data/circbank/circBank_circrna_annotation.txt"), sep="\t", header=T)[,c(1,2)]
     colnames(circbank) <- c("circBank","circBase")
 
     input_with_strand <- merge(circbank,input_with_strand, by = c("circBase"), all.y = T)[, union(names(circbank), names(input_with_strand))]
@@ -131,7 +146,7 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
 
   message("Loading Arraystar data")
   
-  arraystar <- read.csv(paste0("../data/arraystar/",ribocirc_species,"_mapping_array_final.csv"), sep="\t", header=T)
+  arraystar <- read.csv(paste0("../circhemy/data/arraystar/",ribocirc_species,"_mapping_array_final.csv"), sep="\t", header=T)
   colnames(arraystar) <- c("build2","build1","Arraystar")
 
   message("Merging genome build 1")
@@ -141,8 +156,8 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
 
   message("Loading CircRNA Standard Nomenclature (CSN) v1 data")
 
-  csn <- read.csv(paste0("../data/csnv1/",ribocirc_species,"_CSNv1.csv"), sep="\t", header=F)
-  colnames(csn) <- c("CircAtlas","CSNv1","Error","build2","Source")
+  csn <- read.csv(paste0("../circhemy/data/csnv1/",ribocirc_species,"_CSNv1.csv"), sep="\t", header=F)
+  colnames(csn) <- c("CircAtlas2","CSNv1","Error","build2","Source")
   csn <- csn[,c("CSNv1","build2")]
 
   message("Merging genome build 2 only")
@@ -158,29 +173,29 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
     
     message("Loading exorbase data")
     
-    exorbase <- read.csv("../data/exorbase/circRNAs_anno.txt", sep="\t", header=T)[,c("circID","Genomic.position")]
+    exorbase <- read.csv("../circhemy/data/exorbase/circRNAs_anno.txt", sep="\t", header=T)[,c("circID","Genomic.position")]
 
-    # adjust position to match the circatlas format
+    # adjust position to match the CircAtlas2 format
     exorbase$Genomic.position<-gsub("-","|",exorbase$Genomic.position)
 
     # merge based on hg38 coordinates
 
     message("Merging genome build 1")
-    colnames(exorbase) <- c("exorBase2","build1")
+    colnames(exorbase) <- c("exoRBase2","build1")
     build1 <- merge(exorbase,build1, by = c("build1"), all.y = T)[, union(names(exorbase), names(build1))]
 
     message("Merging genome build 2")
-    colnames(exorbase) <- c("exorBase2","build2")
+    colnames(exorbase) <- c("exoRBase2","build2")
     build2 <- merge(exorbase,build2, by = c("build2"), all.y = T)[, union(names(exorbase), names(build2))]
     
   } else {
-    exorBase2 <- as.data.frame(rep(NA,nrow(build1)))
-    colnames(exorBase2) <- "exorBase2"
-    build1 <-cbind(exorBase2,build1)
+    exoRBase2 <- as.data.frame(rep(NA,nrow(build1)))
+    colnames(exoRBase2) <- "exoRBase2"
+    build1 <-cbind(exoRBase2,build1)
 
-    exorBase2 <- as.data.frame(rep(NA,nrow(build2)))
-    colnames(exorBase2) <- "exorBase2"
-    build2 <-cbind(exorBase2,build2)
+    exoRBase2 <- as.data.frame(rep(NA,nrow(build2)))
+    colnames(exoRBase2) <- "exoRBase2"
+    build2 <-cbind(exoRBase2,build2)
   }
 
   message("Creating multi-field genomic coordinates")
@@ -220,39 +235,38 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
 }
 
 human <- c("Species",
-           "CircAtlas",
-           "hg19",
+           "CircAtlas2",
            "hg38",
+           "hg19",
            "circBase",
-           "circRNADB",
-           "Deepbase2",
+           "circRNADb",
+           "deepBase2",
            "Circpedia2"
 )
 
 mouse <- c("Species",
-           "CircAtlas",
-           "mm9",
+           "CircAtlas2",
            "mm10",
+           "mm9",
            "circBase",
-           "circRNADB",
-           "Deepbase2",
+           "circRNADb",
+           "deepBase2",
            "Circpedia2"
 )
 
 rat <- c("Species",
-         "CircAtlas",
-         "rn5",
+         "CircAtlas2",
          "rn6",
+         "rn5",
          "circBase",
-         "circRNADB",
-         "Deepbase2",
+         "circRNADb",
+         "deepBase2",
          "Circpedia2"
          )
 
-
-human_data <- process_input_tables("../data/circatlas/hg38_hg19_v2.0.txt", human, "homo_sapiens", "../data/circatlas/human_bed_v2.0.txt","Human")
-mouse_data <- process_input_tables("../data/circatlas/mm10_mm9_v2.0.txt", mouse, "mus_musculus", "../data/circatlas/mouse_bed_v2.0.txt","Mouse")
-rat_data <- process_input_tables("../data/circatlas/rn6_rn5_v2.0.txt", rat, "rattus_norvegicus", "../data/circatlas/rat_bed_v2.0.txt","Rat")
+human_data <- process_input_tables("../circhemy/data/circatlas/hg38_hg19_v2.0.txt", human, "homo_sapiens", "../circhemy/data/circatlas/human_bed_v2.0.txt","Human")
+mouse_data <- process_input_tables("../circhemy/data/circatlas/mm10_mm9_v2.0.txt", mouse, "mus_musculus", "../circhemy/data/circatlas/mouse_bed_v2.0.txt","Mouse")
+rat_data <- process_input_tables("../circhemy/data/circatlas/rn6_rn5_v2.0.txt", rat, "rattus_norvegicus", "../circhemy/data/circatlas/rat_bed_v2.0.txt","Rat")
 
 # binning together species data
 final_data <- list(human_data,mouse_data,rat_data)
@@ -264,26 +278,27 @@ bind_dataframe <- do.call(rbind, final_data )
 bind_dataframe <- bind_dataframe[,c(
   "Species",
   "circBase",
-  "CircAtlas",
-  "circRNADB",
-  "Deepbase2",
+  "CircAtlas2",
+  "circRNADb",
+  "deepBase2",
   "Circpedia2",
   "circBank",
   "riboCIRC",
-  "exorBase2",
+  "exoRBase2",
   "Arraystar",
   "CSNv1",
   "Chr",
   "Start",
   "Stop",
   "Strand",
+  "Gene",
   "Genome",
   "Pubmed"
 )]
 
 # write to CSV file for easy SQLite3 export
 # no column names since we set those in the SQL schema
-write.table(bind_dataframe, file= "../data/circhemy_data.csv", row.names=F, quote = F, col.names = F, sep="\t")
+write.table(bind_dataframe, file= "../circhemy/data/circhemy_data.csv", row.names=F, quote = F, col.names = F, sep="\t")
 
 # create a nice, small package, it's all text data after all
-bzip2("../data/circhemy_data.csv")
+bzip2("../circhemy/data/circhemy_data.csv", overwrite=T)
