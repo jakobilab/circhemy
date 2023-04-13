@@ -20,6 +20,8 @@
 
 options(echo=FALSE)
 suppressMessages(suppressWarnings(library(R.utils)))
+suppressMessages(suppressWarnings(library(stringr)))
+suppressMessages(suppressWarnings(library(biomaRt)))
 
 process_input_tables = function(data_file, column_names, species, bed_file, ribocirc_species){
   
@@ -71,6 +73,20 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   colnames(csn) <- c(colnames(input_with_strand)[3], "Gene")
 
   input_with_strand <- merge(csn,input_with_strand, by=colnames(input_with_strand)[3], all.y = T)[, union(names(input_with_strand), "Gene")]
+
+  annotation <- paste0(substr(str_split(species,"_")[[1]][1],1,1),str_split(species,"_")[[1]][2],"_gene_ensembl")
+  ensembl <- useMart("ensembl", dataset = annotation, host = "https://useast.ensembl.org")
+
+  bm <- getBM(attributes = c("ensembl_gene_id", "external_gene_name", "entrezgene_id", "wikigene_description"), values=input_with_strand$Gene,  mart = ensembl)
+
+  idx_bm <- match(input_with_strand$Gene, bm$external_gene_name)
+  input_with_strand$Description <- bm$wikigene_description[idx_bm]
+  input_with_strand$ENSEMBL <- bm$ensembl_gene_id[idx_bm]
+  input_with_strand$Entrez <- bm$entrezgene_id[idx_bm]
+
+# print(head(input_with_strand))
+#   q()
+
   message("Loading circ2disease table")
   
   # include circ2disease data
@@ -268,6 +284,7 @@ human_data <- process_input_tables("../circhemy/data/circatlas/hg38_hg19_v2.0.tx
 mouse_data <- process_input_tables("../circhemy/data/circatlas/mm10_mm9_v2.0.txt", mouse, "mus_musculus", "../circhemy/data/circatlas/mouse_bed_v2.0.txt","Mouse")
 rat_data <- process_input_tables("../circhemy/data/circatlas/rn6_rn5_v2.0.txt", rat, "rattus_norvegicus", "../circhemy/data/circatlas/rat_bed_v2.0.txt","Rat")
 
+message("Starting final data merge for CSV export")
 # binning together species data
 final_data <- list(human_data,mouse_data,rat_data)
 
@@ -277,6 +294,10 @@ bind_dataframe <- do.call(rbind, final_data )
 # reorder table fields
 bind_dataframe <- bind_dataframe[,c(
   "Species",
+  "Gene",
+  "Description",
+  "ENSEMBL",
+  "Entrez",
   "circBase",
   "CircAtlas2",
   "circRNADb",
@@ -291,14 +312,15 @@ bind_dataframe <- bind_dataframe[,c(
   "Start",
   "Stop",
   "Strand",
-  "Gene",
   "Genome",
   "Pubmed"
 )]
 
+message("Writing CSV export")
 # write to CSV file for easy SQLite3 export
 # no column names since we set those in the SQL schema
 write.table(bind_dataframe, file= "../circhemy/data/circhemy_data.csv", row.names=F, quote = F, col.names = F, sep="\t")
 
+message("Bzip2 CSV export")
 # create a nice, small package, it's all text data after all
 bzip2("../circhemy/data/circhemy_data.csv", overwrite=T)
