@@ -495,6 +495,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 
 def ui_update_found_circrnas(data) -> str:
     circrna_list = data.split('\n')
+    circrna_list = list(filter(None, circrna_list))
 
     ratio, found = util.check_input_return_found_circ_number(util, input_field=
     ui_convert_form_values['db_checkbox'].value, query_data=circrna_list)
