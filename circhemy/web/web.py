@@ -471,7 +471,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 
         table = ui.table(table_base_dict, html_columns=list(range(len(full_list))))
 
-        table.style("width: 75%")
+        table.style("width: 90%")
         table.style("text-align:center; "
                     "margin-left:auto; "
                     "margin-right:auto; ")
@@ -548,14 +548,14 @@ def ui_layout_add_left_drawer(convert=False) -> None:
                     for item in range(int(len(util.select_db_columns) / 2)):
                         db_entries.append(
                             ui.checkbox(util.select_db_columns[item],
-                                        value=True))
+                                        value=util.active_db_columns[util.select_db_columns[item]]))
 
                 with ui.column():
                     for item in range(int(len(util.select_db_columns) / 2),
                                       len(util.select_db_columns)):
                         db_entries.append(
                             ui.checkbox(util.select_db_columns[item],
-                                        value=True))
+                                        value=util.active_db_columns[util.select_db_columns[item]]))
 
             checkbox_list = db_entries
             ui_convert_form_values['db_checkboxes'] = checkbox_list
@@ -838,119 +838,6 @@ async def page_application_display_results():
         ui.html('<strong>Internal error encountered.</strong>'
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
-
-
-@ui.page('/test')
-async def page_application_layout_test():
-    ui_layout_add_head_html()
-    ui_layout_add_header()
-
-    ####################
-    with ui.row():
-        with ui.column().style('background-color: #d7e3f4; '):
-            ui_layout_generate_logo()
-
-            ui.label('Select input ID type:').\
-                style("text-decoration: underline;")
-
-            ui_convert_form_values['db_checkbox'] = ui.select(
-                util.select_db_columns, value="CircAtlas",
-                label="ID format").style("width: 90%")
-
-            with ui.column():
-                ui.label('')
-                ui.label('Select output fields:').style(
-                    "text-decoration: underline;")
-
-                ui.label("Genomic Coordinates")
-                with ui.row():
-                    tmp = [ui.checkbox('Chr', value=True),
-                           ui.checkbox('Start', value=True),
-                           ui.checkbox('Stop', value=True)]
-
-                db_entries = []
-                ui.label("Databases")
-
-                with ui.row():
-                    with ui.column():
-                        for item in range(int(len(util.select_db_columns) / 2)):
-                            db_entries.append(
-                                ui.checkbox(util.select_db_columns[item],
-                                            value=True))
-
-                    with ui.column():
-                        for item in range(int(len(util.select_db_columns) / 2),
-                                          len(util.select_db_columns)):
-                            db_entries.append(
-                                ui.checkbox(util.select_db_columns[item],
-                                            value=True))
-
-                checkbox_list = tmp + db_entries
-                ui_convert_form_values['db_checkboxes'] = checkbox_list
-                ui.label('')
-
-            with ui.column():
-                ui.label('Select Output Format:').style(
-                    "text-decoration: underline;")
-
-                ui_convert_form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
-                                                    ",": "Comma-delimited [,]",
-                                                    ";": "Semicolon-delimited [;]"},
-                                                              value="\t",
-                                                              label="Separator character") \
-                    .style("width: 90%")
-
-                ui_convert_form_values['select3'] = ui.select({"NA": "NA",
-                                                    "\t": "Tab [\\t]",
-                                                    "": "Don't print anything"},
-                                                              value="NA",
-                                                              label="Placeholder"
-                                                         " for unavailable "
-                                                         "fields") \
-                    .style("width: 90%")
-
-        with ui.column():
-
-            ui_convert_form_values['mode'] = "convert"
-
-            # ui.image('https://imgs.xkcd.com/comics/standards.png')
-
-            ui_convert_form_values['textfield'] = ui.input(
-                label='Please paste a list of circRNA IDs, one per line:',
-                placeholder='start typing',
-                on_change=lambda e: ui_convert_form_values['submit_button'].
-                set_text(check_text_field_input(upload_data=None))). \
-                props('type=textarea rows=30').style("width: 60%; ")
-
-            ui_convert_form_values['or'] = ui.label('- OR -')
-
-            ui_convert_form_values['upload'] = ui.upload(
-                label="1) Click + to select file "
-                      "2) upload file via button to the right "
-                      "3) press 'convert circRNA IDs' button",
-                on_upload=lambda e: ui_file_upload_handler(e.files[0])).style(
-                "width: 60%")
-
-            with ui.row():
-                ui_convert_form_values['submit_button'] = \
-                    ui.button('Convert circRNA IDs', on_click=lambda:
-                    ui.open(page_application_display_results)).props("disabled=true")
-
-                ui_convert_form_values['example_button'] = \
-                    ui.button('Load example data', on_click=lambda:
-                    ui_load_example_data())
-
-            ui_convert_form_values['circrna_found'] = ui.linear_progress(show_value=False,
-                                                                         value=0).style(
-                "width: 60%; ")
-
-            ui_convert_form_values['circrna_found'].set_visibility(False)
-            ui_convert_form_values['submit_notification'] = ui.label('')
-
-    ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; ')
-
-    ui_layout_add_footer_and_right_drawer()
 
 
 # content pages

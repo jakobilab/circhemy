@@ -28,7 +28,7 @@ class Util(object):
 
     support_email = program_name+"@jakobilab.org"
 
-    support_web = "https://github.com/jakobilab/circhemy/ "+\
+    support_web = "https://github.com/jakobilab/circhemy/"+\
                   program_name +\
                   "/issues/new"
 
@@ -52,17 +52,40 @@ class Util(object):
 
     select_db_columns = [
         "CSNv1",
+        "Gene",
+        "ENSEMBL",
+        "Entrez",
+        "Description",
         "circBase",
-        "CircAtlas",
-        "circRNADB",
+        "CircAtlas2",
+        "circRNADb",
         "circBank",
-        "Deepbase2",
+        "deepBase2",
         "Circpedia2",
         "riboCIRC",
         "exorBase2",
         "Arraystar",
         "Pubmed"
     ]
+
+    active_db_columns = {
+        "CSNv1": True,
+        "Gene": True,
+        "ENSEMBL": False,
+        "Entrez": False,
+        "Description": False,
+        "circBase": True,
+        "CircAtlas2": True,
+        "circRNADb": True,
+        "circBank": True,
+        "deepBase2": True,
+        "Circpedia2": True,
+        "riboCIRC": True,
+        "exorBase2": True,
+        "Arraystar": True,
+        "Pubmed": False
+}
+
 
     db_columns = ["Species"] + select_db_columns + ["Chr",
                                                     "Start",
@@ -71,12 +94,12 @@ class Util(object):
                                                     "Genome"]
 
     external_db_urls = {"circBase": "http://www.circbase.org/cgi-bin/singlerecord.cgi?id=",
-                        "CircAtlas": "http://159.226.67.237:8080/new/circ_detail.php?ID=",
+                        "CircAtlas2": "http://159.226.67.237:8080/new/circ_detail.php?ID=",
                         "Circpedia2": "",
                         "circBank": "http://www.circbank.cn/infoCirc.html?id=",
-                        "Deepbase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
+                        "deepBase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
                         "Arraystar": "",
-                        "circRNADB": "",
+                        "circRNADb": "",
                         "riboCIRC": "http://www.ribocirc.com/rna_detail.php?dependent=Condition-independent&circ_id=",
                         "Circ2Disease": "http://bioinformatics.zju.edu.cn/Circ2Disease/browse_circRNA_result.php?circRNA=",
                         "Pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
@@ -87,7 +110,11 @@ class Util(object):
                         "Genome": "",
                         "CSNv1": "https://static.jakobilab.org/circhemy/",
                         "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?",
-                        "Species": ""
+                        "ENSEMBL": "http://www.ensembl.org/id/",
+                        "Entrez": "https://www.ncbi.nlm.nih.gov/gene/",
+                        "Description": "",
+                        "Species": "",
+                        "Gene": ""
                         }
 
     db_connection = ""
