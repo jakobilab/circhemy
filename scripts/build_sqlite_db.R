@@ -84,9 +84,6 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   input_with_strand$ENSEMBL <- bm$ensembl_gene_id[idx_bm]
   input_with_strand$Entrez <- bm$entrezgene_id[idx_bm]
 
-# print(head(input_with_strand))
-#   q()
-
   message("Loading circ2disease table")
   
   # include circ2disease data
@@ -157,8 +154,8 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
 
   names(build1)[c(6)] <- 'build1'
   names(build2)[c(6)] <- 'build2'
-  build1$Genome <- column_names[3]
-  build2$Genome <- column_names[4]
+  build1$Genome <- column_names[4]
+  build2$Genome <- column_names[3]
 
   message("Loading Arraystar data")
   
