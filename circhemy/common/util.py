@@ -63,7 +63,7 @@ class Util(object):
         "deepBase2",
         "Circpedia2",
         "riboCIRC",
-        "exorBase2",
+        "exoRBase2",
         "Arraystar",
         "Pubmed"
     ]
@@ -81,10 +81,34 @@ class Util(object):
         "deepBase2": True,
         "Circpedia2": True,
         "riboCIRC": True,
-        "exorBase2": True,
+        "exoRBase2": True,
         "Arraystar": True,
         "Pubmed": False
-}
+    }
+
+    all_db_columns = [
+        "Species",
+        "Gene",
+        "Description",
+        "ENSEMBL",
+        "Entrez",
+        "circBase",
+        "CircAtlas2",
+        "circRNADb",
+        "deepBase2",
+        "Circpedia2",
+        "circBank",
+        "riboCIRC",
+        "exoRBase2",
+        "Arraystar",
+        "CSNv1",
+        "Chr",
+        "Start",
+        "Stop",
+        "Strand",
+        "Genome",
+        "Pubmed"
+    ]
 
 
     db_columns = ["Species"] + select_db_columns + ["Chr",
@@ -95,20 +119,23 @@ class Util(object):
 
     external_db_urls = {"circBase": "http://www.circbase.org/cgi-bin/singlerecord.cgi?id=",
                         "CircAtlas2": "http://159.226.67.237:8080/new/circ_detail.php?ID=",
-                        "Circpedia2": "",
+                        "Circpedia2": "/circrna/",
                         "circBank": "http://www.circbank.cn/infoCirc.html?id=",
                         "deepBase2": "https://rna.sysu.edu.cn/deepbase3/subpages/ViewDetail_circRNA.php?spe=hg19&name=",
-                        "Arraystar": "",
-                        "circRNADb": "",
+                        "Arraystar": "/circrna/",
+                        "circRNADb": "/circrna/",
                         "riboCIRC": "http://www.ribocirc.com/rna_detail.php?dependent=Condition-independent&circ_id=",
                         "Circ2Disease": "http://bioinformatics.zju.edu.cn/Circ2Disease/browse_circRNA_result.php?circRNA=",
                         "Pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
-                        "exorBase2": "http://www.exorbase.org/exoRBaseV2/detail/detailInfo?kind=circRNA&id=",
+                        "exoRBase2": "http://www.exorbase.org/exoRBaseV2/detail/detailInfo?kind=circRNA&id=",
                         "Chr": "",
                         "Start": "",
                         "Stop": "",
+                        "Strand": "",
+                        "Coordinates": "",
+                        "Unspliced length": "",
                         "Genome": "",
-                        "CSNv1": "https://static.jakobilab.org/circhemy/",
+                        "CSNv1": "https://genome.ucsc.edu/cgi-bin/hgTracks?",
                         "Genome-Browser": "https://genome.ucsc.edu/cgi-bin/hgTracks?",
                         "ENSEMBL": "http://www.ensembl.org/id/",
                         "Entrez": "https://www.ncbi.nlm.nih.gov/gene/",
@@ -309,5 +336,31 @@ class Util(object):
               " WHERE " + keyword_sql + ";"
 
         sql_output = self.db_cursor.execute(sql).fetchall()
+
+        return sql_output
+
+    def run_circrna_query(self, circrna_id):
+
+        # build SQL string
+        sql_output = self.db_cursor.execute("SELECT "
+                                            "* " + \
+                                            " FROM " + self.database_table_name + \
+                                            " WHERE " + \
+                                            " CSNv1 == ? OR " + \
+                                            " circBase == ? OR " + \
+                                            " CircAtlas2 == ? OR " + \
+                                            " circRNADb == ? OR " + \
+                                            " circBank == ? OR " + \
+                                            " deepBase2 == ? OR " + \
+                                            " Circpedia2 == ? OR " + \
+                                            " riboCIRC == ? OR " + \
+                                            " exorBase2 == ? OR " + \
+                                            " Arraystar == ?;", (
+                                            circrna_id, circrna_id, circrna_id,
+                                            circrna_id, circrna_id, circrna_id,
+                                            circrna_id, circrna_id, circrna_id,
+                                            circrna_id)).fetchall()
+
+
 
         return sql_output

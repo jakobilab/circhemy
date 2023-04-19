@@ -75,11 +75,11 @@ ui_convert_form_values['chart'], ui_convert_form_values['dbsize'],\
 
 def main():
     # run main application
-    ui.run(title=util.program_name,
+    ui.run(title=util.program_name+" "+util.software_version,
            show=False,
            exclude="audio,chart colors,interactive_image,joystick,"
                    "keyboard,log,scene,video",
-           binding_refresh_interval=1.0
+           binding_refresh_interval=0.1
            )
 
 # util functions
@@ -125,9 +125,7 @@ def check_text_field_input(upload_data) -> str:
         ui_convert_form_values['submit_notification'].set_text(
             ui_update_found_circrnas(circ_list))
 
-        return "Submit " + \
-            str(circ_list.count('\n') + 1) + \
-            " circRNAs for ID conversion"
+        return "Submit " + str(circ_list.count('\n')) + " circRNAs for ID conversion"
 
     elif not circ_list:
         ui_convert_form_values['submit_button'].props("disabled=true")
@@ -168,6 +166,7 @@ def check_query_text_field() -> None:
             ui_convert_form_values['submit_query_button'].props(remove="disabled=true")
         else:
             ui_convert_form_values['submit_query_button'].props("disabled=true")
+
         ui_convert_form_values['submit_query_button'].update()
 
 
@@ -178,6 +177,82 @@ def add_if_not_in_list(input_list=[], item_list=[]):
             input_list.append(item)
 
     return input_list
+
+
+def ui_generate_readable_coordinate(value: int):
+
+    return f'{value:,}'
+
+
+def ui_generate_external_link(external_site: str, values: dict):
+    # special case for genome browser links
+    # not handled by normal external DB URL dict
+    # since we need to build the link component first
+
+    pos = values['Chr'] + ":" + \
+          str(values['Start']) + \
+          "-" + \
+          str(values['Stop'])
+
+    tmp_start = values['Start']
+    tmp_stop = values['Stop']
+
+    print_strand = ""
+    if values['Strand']:
+        print_strand = " ["+values['Strand']+"]"
+
+    print_pos = values['Chr'] + ": " + f'{tmp_start:,}' + " - " + f'{tmp_stop:,}' + print_strand
+
+    if external_site == "Coordinates" and values["Coordinates"]:
+        # build pos format: chrXZY:1234-5789
+
+        build = values['Genome']
+
+        returnval = "<a style=\"text-decoration: underline;" \
+                    "\" href=\"" + util.external_db_urls[
+                        "Genome-Browser"] \
+                    + "db=" + build + "&" \
+                    + "position=" + pos + "\"" \
+                    + " target=\"_blank\">" \
+                    + print_pos + "</a>"
+
+    elif external_site == "CSNv1" and values["CSNv1"]:
+
+        pos = values['Chr'] + ":" + \
+              str(values['Start']) + \
+              "-" + \
+              str(values['Stop'])
+
+        build = values['Genome']
+
+        returnval = "<a style=\"text-decoration: underline;\" href=\"/circrna/" +\
+                    values['CSNv1'] + "\">" + values['CSNv1'] + \
+                    "</a> <a style=\"text-decoration: underline;" \
+                       "\" href=\"" + util.external_db_urls["CSNv1"] \
+                    + "db=" + build + "&" \
+                    + "position=" + pos + "&hgct_customText=https://static.jakobilab.org/circhemy/" +\
+                    values['Genome'] + ".bed\"" \
+                    + " target=\"_blank\">[view exons in Genome Browser]</a>"
+
+    elif external_site == "Species" or external_site == "Gene":
+
+        returnval = "<i>"+values[external_site].replace("_", " ")+"</i>"
+
+    elif values[external_site] and util.external_db_urls[
+                                external_site]:
+        returnval = "<a style=\"text-decoration: underline;" \
+                            "\" href=\"" + util.external_db_urls[
+                                external_site] \
+                            + str(values[external_site]) + "\" target=\"_blank\">" \
+                            + str(values[external_site]) + "</a>"
+
+    elif values[external_site] and not util.external_db_urls[
+                                external_site]:
+        returnval = str(values[external_site])
+    else:
+        returnval = ""
+
+    return returnval
 
 
 def ui_result_table_get_coordinates(input_list=[]):
@@ -469,7 +544,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
     # only set up web table if we are calling from web
     if not input_id:
 
-        table = ui.table(table_base_dict, html_columns=list(range(len(full_list))))
+        table = ui.aggrid(table_base_dict, html_columns=list(range(len(full_list))))
 
         table.style("width: 90%")
         table.style("text-align:center; "
@@ -785,9 +860,7 @@ async def page_application_query():
             ui.button('Remove condition', on_click=lambda:
             ui_query_remove_conditions(condition_row))
 
-    ui_convert_form_values['circrna_found'] = ui.linear_progress(show_value=False,
-                                                                 value=0).style(
-        "width: 60%; ")
+    ui_convert_form_values['circrna_found'] = ui.linear_progress(show_value=False, value=0).style("width: 60%; ")
 
     ui_convert_form_values['circrna_found'].set_visibility(False)
 
@@ -840,6 +913,122 @@ async def page_application_display_results():
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
 
+@ui.page('/circrna/')
+async def page_application_display_circrna_profile():
+    ui_layout_add_head_html()
+    ui_layout_add_header()
+
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
+        ui_layout_generate_logo()
+
+    # circRNA Name header
+    ui.html("URL does not contain a known circRNA ID").style('font-size: 24pt;')
+
+    ui.html('<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
+
+    ui_layout_add_footer_and_right_drawer()
+
+
+@ui.page('/circrna/{circ_id}')
+async def page_application_display_circrna_profile(circ_id: str):
+
+    ui_layout_add_head_html()
+    ui_layout_add_header()
+
+    output = util.run_circrna_query(util, circrna_id=circ_id)
+
+    if len(output) > 0:
+
+        with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
+
+            ui_layout_generate_logo()
+
+            if len(output) > 1:
+                ui.html("Multiple circRNAs matches "+"("+str(len(output))+")"+":").style('font-size: 14pt;')
+
+                ui.html("&nbsp;").style('font-size: 14pt;')
+
+            with ui.tabs() as tabs:
+                tabs.style('background-color: #d7e3f4; height: 50%; border-radius: 0px;')
+                tabs.props("vertical")
+                tabs.props("dense")
+                tabs.props("no-caps")
+                tabs.props("inline-label")
+                tabs.props("outside-arrows")
+                tabs.props('align="left"')
+
+                for hit in range(0, len(output)):
+                    if output[hit][14]:
+                        ui.tab(output[hit][15] + ":" + str(
+                            output[hit][16]) + "-" + str(output[hit][17])+" ["+output[hit][19]+"]",
+                               icon='change_circle').style("justify-content: initial; background-color: #d7e3f4; ")
+                    else:
+                        ui.tab(output[hit][15] + ":" + str(
+                            output[hit][16]) + "-" + str(output[hit][17])+" ["+output[hit][19]+"]",
+                               icon='donut_large').style("justify-content: initial; background-color: #d7e3f4; ")
+                
+                ui.html("&nbsp;").style('font-size: 14pt;')
+                with ui.row():
+                    ui.icon('change_circle').classes('text-2xl')
+                    ui.label('CircRNA with new CSNv1 annotation')
+                with ui.row():
+                    ui.icon('donut_large').classes('text-2xl')
+                    ui.html('CircRNA <u>without</u> CSNv1 annotation')
+
+    if len(output) > 0:
+
+        ui.html(circ_id).style('font-size: 24pt;')
+
+    else:
+        with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
+
+            ui_layout_generate_logo()
+
+        # circRNA Name header
+        ui.html("\""+circ_id+"\" is an unknown circRNA ID").style('font-size: 24pt;')
+
+        ui.html('<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
+
+    if len(output) >= 1:
+
+        first_tab = output[0][15] + ":" + str(output[0][16]) + "-" + str(output[0][17])+" ["+output[0][19]+"]"
+
+        with ui.tab_panels(tabs, value=first_tab).style("background-color: #f8f8f8;"):
+
+            for hit in range(0, len(output)):
+
+                output_dict = {}
+
+                with ui.tab_panel(output[hit][15] + ":" + str(
+                        output[hit][16]) + "-" + str(output[hit][17])+" ["+output[hit][19]+"]"):
+
+                    for hit_id in range(0, len(util.all_db_columns)):
+                        output_dict[util.all_db_columns[hit_id]] = output[hit][hit_id]
+
+                    output_dict['Coordinates'] = 1
+                    output_dict['Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
+
+                    local_columns = util.all_db_columns.copy()
+                    local_columns.append('Coordinates')
+                    local_columns.append('Unspliced length')
+
+                    with ui.card().style('width: 600px;font-size: 12pt;').\
+                            classes('column justify-between').\
+                            style("background-color: #d7e3f4;") as card:
+
+                        for hit_id in range(0, len(local_columns)):
+
+                            if local_columns[hit_id] not in ["Chr", "Start", "Stop", "Strand"]:
+                                with ui.row():
+
+                                    with ui.column().style('width: 150px;'):
+                                        ui.html('<strong>' + local_columns[hit_id] + '</strong>')
+
+                                    with ui.column():
+                                        ui.html(ui_generate_external_link(local_columns[hit_id], output_dict)).\
+                                           style('align:center')
+
+    ui_layout_add_footer_and_right_drawer()
 
 # content pages
 
@@ -851,8 +1040,7 @@ async def page_about():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html("About "+util.program_name).style(
-        'text-align: center; font-size: 26pt;')
+    ui.html("About "+util.program_name).style('text-align: center; font-size: 26pt;')
 
     with ui.card().style('width: 100%;') as card:
         ui.html("Circular RNAs").style('text-align: center; font-size: 16pt;')
@@ -1125,8 +1313,7 @@ async def page_cli():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html("Command Line Interface (CLI)").style(
-        'text-align: center; font-size: 26pt;')
+    ui.html("Command Line Interface (CLI)").style('text-align: center; font-size: 26pt;')
 
     with ui.card().style('width: 100%;') as card:
         ui.html("Setup").style('text-align: center; font-size: 16pt;')
