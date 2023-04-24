@@ -22,15 +22,13 @@ class Util(object):
     # global settings
     software_version = "0.0.3-dev"
 
-    database_version = "DB-0.0.3-dev"
+    database_version = "2023.04"
 
     program_name = "circhemy"
 
     support_email = program_name+"@jakobilab.org"
 
-    support_web = "https://github.com/jakobilab/circhemy/"+\
-                  program_name +\
-                  "/issues/new"
+    support_web = "https://github.com/jakobilab/" + program_name + "/issues/new"
 
     news_url = "https://redmine.jakobilab.org/projects/circhemy/" \
                "news.atom?key=c616b9fb231445ac4ca65d94db1d3207382798e9"
@@ -110,7 +108,6 @@ class Util(object):
         "Pubmed"
     ]
 
-
     db_columns = ["Species"] + select_db_columns + ["Chr",
                                                     "Start",
                                                     "Stop",
@@ -141,8 +138,15 @@ class Util(object):
                         "Entrez": "https://www.ncbi.nlm.nih.gov/gene/",
                         "Description": "",
                         "Species": "",
-                        "Gene": ""
+                        "Gene": "",
+                        "Stable circhemy database ID": ""
                         }
+
+    db_action_codes = {
+        1: "Added",
+        2: "Changed",
+        3: "Deleted"
+    }
 
     db_connection = ""
     db_cursor = ""
@@ -343,24 +347,41 @@ class Util(object):
 
         # build SQL string
         sql_output = self.db_cursor.execute("SELECT "
-                                            "* " + \
-                                            " FROM " + self.database_table_name + \
-                                            " WHERE " + \
-                                            " CSNv1 == ? OR " + \
-                                            " circBase == ? OR " + \
-                                            " CircAtlas2 == ? OR " + \
-                                            " circRNADb == ? OR " + \
-                                            " circBank == ? OR " + \
-                                            " deepBase2 == ? OR " + \
-                                            " Circpedia2 == ? OR " + \
-                                            " riboCIRC == ? OR " + \
-                                            " exorBase2 == ? OR " + \
+                                            "* " +
+                                            " FROM " + self.database_table_name +
+                                            " INNER JOIN " + self.database_table_name + "_log " +
+                                            " ON " + self.database_table_name + "_log.CircRNA_ID = " +
+                                            self.database_table_name + ".CircRNA_ID " +
+                                            " INNER JOIN " + self.database_table_name + "_db_info " +
+                                            " ON " + self.database_table_name + "_db_info.DB_ID = " +
+                                            self.database_table_name + "_log.DB_ID" +
+                                            " WHERE " +
+                                            " CSNv1 == ? OR " +
+                                            " circBase == ? OR " +
+                                            " CircAtlas2 == ? OR " +
+                                            " circRNADb == ? OR " +
+                                            " circBank == ? OR " +
+                                            " deepBase2 == ? OR " +
+                                            " Circpedia2 == ? OR " +
+                                            " riboCIRC == ? OR " +
+                                            " exorBase2 == ? OR " +
                                             " Arraystar == ?;", (
-                                            circrna_id, circrna_id, circrna_id,
-                                            circrna_id, circrna_id, circrna_id,
-                                            circrna_id, circrna_id, circrna_id,
-                                            circrna_id)).fetchall()
+                                                circrna_id, circrna_id, circrna_id,
+                                                circrna_id, circrna_id, circrna_id,
+                                                circrna_id, circrna_id, circrna_id,
+                                                circrna_id)).fetchall()
 
+        return sql_output
 
+    def get_circrna_history_by_id(self, circrna_id):
+
+        # build SQL string
+        sql_output = self.db_cursor.execute("SELECT "
+                                            "* " +
+                                            " FROM " + self.database_table_name + "_log " +
+                                            " INNER JOIN " + self.database_table_name + "_db_info " +
+                                            " ON " + self.database_table_name + "_db_info.DB_ID = " +
+                                            self.database_table_name + "_log.DB_ID" +
+                                            " WHERE CircRNA_ID = ?", (circrna_id,)).fetchall()
 
         return sql_output

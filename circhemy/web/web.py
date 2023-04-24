@@ -34,6 +34,8 @@ import os
 # own util functions
 import circhemy.common.util as common
 
+from datetime import datetime
+
 
 # core nicegui and web imports
 from fastapi import Request, Response
@@ -728,12 +730,13 @@ def ui_layout_add_footer_and_right_drawer() -> None:
             .style("height: 350px")
 
     with ui.footer().style('background-color: #3874c8'):
-        ui.label(util.program_name + " | software version" +
-                 util.software_version + " | database version" +
+        ui.label(util.program_name + " | software version " +
+                 util.software_version + " | database version " +
                  util.database_version)
-        ui.link(' © 2023 Jakobi Lab ', 'https://jakobilab.org')
         ui.link('Visit Jakobi Lab @ GitHub ',
                 'https://github.com/jakobilab/')
+        ui.link(' © 2023 Jakobi Lab ', 'https://jakobilab.org')
+
 
 
 def ui_query_remove_conditions(container) -> None:
@@ -913,6 +916,7 @@ async def page_application_display_results():
                 '<br/><a href=\"/\">Returning to main page</a>'
                 ).style('text-align:center;')
 
+
 @ui.page('/circrna/')
 async def page_application_display_circrna_profile():
     ui_layout_add_head_html()
@@ -929,7 +933,7 @@ async def page_application_display_circrna_profile():
     ui_layout_add_footer_and_right_drawer()
 
 
-@ui.page('/circrna/{circ_id}')
+@ui.page('/circrna/{circ_id}', title=util.program_name + " - circRNA foo")
 async def page_application_display_circrna_profile(circ_id: str):
 
     ui_layout_add_head_html()
@@ -944,7 +948,7 @@ async def page_application_display_circrna_profile(circ_id: str):
             ui_layout_generate_logo()
 
             if len(output) > 1:
-                ui.html("Multiple circRNAs matches "+"("+str(len(output))+")"+":").style('font-size: 14pt;')
+                ui.html("Multiple circRNAs matching "+"("+str(len(output))+")"+":").style('font-size: 14pt;')
 
                 ui.html("&nbsp;").style('font-size: 14pt;')
 
@@ -958,13 +962,13 @@ async def page_application_display_circrna_profile(circ_id: str):
                 tabs.props('align="left"')
 
                 for hit in range(0, len(output)):
-                    if output[hit][14]:
-                        ui.tab(output[hit][15] + ":" + str(
-                            output[hit][16]) + "-" + str(output[hit][17])+" ["+output[hit][19]+"]",
+                    if output[hit][15]:
+                        ui.tab(output[hit][16] + ":" + str(
+                            output[hit][17]) + "-" + str(output[hit][18])+" ["+output[hit][20]+"]",
                                icon='change_circle').style("justify-content: initial; background-color: #d7e3f4; ")
                     else:
-                        ui.tab(output[hit][15] + ":" + str(
-                            output[hit][16]) + "-" + str(output[hit][17])+" ["+output[hit][19]+"]",
+                        ui.tab(output[hit][16] + ":" + str(
+                            output[hit][17]) + "-" + str(output[hit][18])+" ["+output[hit][20]+"]",
                                icon='donut_large').style("justify-content: initial; background-color: #d7e3f4; ")
                 
                 ui.html("&nbsp;").style('font-size: 14pt;')
@@ -975,11 +979,8 @@ async def page_application_display_circrna_profile(circ_id: str):
                     ui.icon('donut_large').classes('text-2xl')
                     ui.html('CircRNA <u>without</u> CSNv1 annotation')
 
-    if len(output) > 0:
+    if len(output) == 0:
 
-        ui.html(circ_id).style('font-size: 24pt;')
-
-    else:
         with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
 
             ui_layout_generate_logo()
@@ -991,7 +992,7 @@ async def page_application_display_circrna_profile(circ_id: str):
 
     if len(output) >= 1:
 
-        first_tab = output[0][15] + ":" + str(output[0][16]) + "-" + str(output[0][17])+" ["+output[0][19]+"]"
+        first_tab = output[0][16] + ":" + str(output[0][17]) + "-" + str(output[0][18])+" ["+output[0][20]+"]"
 
         with ui.tab_panels(tabs, value=first_tab).style("background-color: #f8f8f8;"):
 
@@ -999,34 +1000,99 @@ async def page_application_display_circrna_profile(circ_id: str):
 
                 output_dict = {}
 
-                with ui.tab_panel(output[hit][15] + ":" + str(
-                        output[hit][16]) + "-" + str(output[hit][17])+" ["+output[hit][19]+"]"):
+                with ui.tab_panel(output[hit][16] + ":" + str(
+                        output[hit][17]) + "-" + str(output[hit][18])+" ["+output[hit][20]+"]"):
 
-                    for hit_id in range(0, len(util.all_db_columns)):
-                        output_dict[util.all_db_columns[hit_id]] = output[hit][hit_id]
+                    local_columns = util.all_db_columns.copy()
+
+                    local_columns.insert(0, "Stable circhemy database ID")
+
+                    for hit_id in range(0, len(local_columns)):
+                        output_dict[local_columns[hit_id]] = output[hit][hit_id]
 
                     output_dict['Coordinates'] = 1
                     output_dict['Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
 
-                    local_columns = util.all_db_columns.copy()
                     local_columns.append('Coordinates')
                     local_columns.append('Unspliced length')
 
-                    with ui.card().style('width: 600px;font-size: 12pt;').\
-                            classes('column justify-between').\
-                            style("background-color: #d7e3f4;") as card:
+                    with ui.row():
 
-                        for hit_id in range(0, len(local_columns)):
+                        with ui.column():
 
-                            if local_columns[hit_id] not in ["Chr", "Start", "Stop", "Strand"]:
+                            with ui.column().style('width: 600px;'):
+                                with ui.card().style('width: 600px;font-size: 12pt;'). \
+                                        classes('column justify-between'). \
+                                        style("background-color: #d7e3f4;") as card:
+                                    ui.html(circ_id).style('font-size: 24pt;')
+
+                            if output_dict['CSNv1']:
+
+                                with ui.column().style('width: 600px;'):
+                                    with ui.card().style('width: 600px;font-size: 12pt;'). \
+                                            classes('column justify-between'). \
+                                            style("background-color: #d7e3f4;") as card:
+                                        ui.html(output_dict['CSNv1']).style('font-size: 20pt;')
+
+                            with ui.column().style('width: 600px;'):
+                                with ui.card().style('width: 600px;font-size: 12pt;'). \
+                                        classes('column justify-between'). \
+                                        style("background-color: #d7e3f4;") as card:
+
+                                    for hit_id in range(0, len(local_columns)):
+
+                                        if local_columns[hit_id] not in ["Chr",
+                                                                         "Start",
+                                                                         "Stop",
+                                                                         "Strand",
+                                                                         "Stable circhemy database ID"]:
+                                            with ui.row():
+
+                                                with ui.column().style('width: 150px;'):
+                                                    ui.html('<strong>' + local_columns[hit_id] + '</strong>')
+
+                                                with ui.column():
+                                                    ui.html(ui_generate_external_link(local_columns[hit_id], output_dict)).\
+                                                       style('align:center')
+
+                        with ui.column().style('width: 350px;'):
+                            with ui.card().style('width: 350px;font-size: 12pt;'). \
+                                    classes('column justify-between'). \
+                                    style("background-color: #d7e3f4;") as card2:
+
+                                output2 = util.get_circrna_history_by_id(util,
+                                                                         circrna_id=output_dict['Stable circhemy database ID'])
+
                                 with ui.row():
+                                    with ui.column().style('width: 220px;'):
+                                        ui.html("<strong>" + local_columns[0] + "<strong>")
 
-                                    with ui.column().style('width: 150px;'):
-                                        ui.html('<strong>' + local_columns[hit_id] + '</strong>')
+                                    with ui.column().style('width: 30px;'):
+                                        ui.html(str(output[hit][0]))
 
-                                    with ui.column():
-                                        ui.html(ui_generate_external_link(local_columns[hit_id], output_dict)).\
-                                           style('align:center')
+                                with ui.row():
+                                    with ui.column().style('width: 80px;'):
+                                        ui.html('<strong>DB Version</strong>')
+
+                                    with ui.column().style('width: 80px;'):
+                                        ui.html('<strong>Status</strong>')
+
+                                    with ui.column().style('width: 80px;'):
+                                        ui.html('<strong>Date</strong>')
+
+                                for status_id in range(0, len(output2)):
+
+                                    time_code = datetime.utcfromtimestamp(output2[status_id][5]).strftime('%m/%d/%Y')
+
+                                    with ui.row():
+                                        with ui.column().style('width: 80px;'):
+                                            ui.html(str(output2[status_id][4]))
+
+                                        with ui.column().style('width: 80px;'):
+                                            ui.html(str(util.db_action_codes[output2[status_id][1]]))
+
+                                        with ui.column().style('width: 80px;'):
+                                            ui.html(str(time_code))
 
     ui_layout_add_footer_and_right_drawer()
 
@@ -1421,23 +1487,19 @@ async def page_news():
 
 
 # error pages for error 404 and 500
-
-
 @app.exception_handler(404)
 async def exception_handler_404(request: Request, exception: Exception) -> Response:
     with Client(ui.page('')) as client:
-        with ui.column().\
-                style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
-            ui.label('Error 404').\
-                style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.label('Page not found').\
+        with ui.column().style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+            ui.label('Error 404').style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+            ui.html("<strong>Page not found: </strong>" + str(request.url.path)).\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html("<a href=\"/\"><img src=\"static/error.png\"></a>").style(
-                'text-align: center; padding:10px;')
-            ui.label('Please contact the server administrator at '+
-                     util.support_email+' for additional support.').\
+            ui.html(str(Request)).style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style('text-align: center; padding:10px;')
+            ui.label('Please contact the server administrator at ' + util.support_email+' for additional support.').\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.link('Click here to report an issue on GitHub.', util.support_web).\
+            ui.link('Click here to report an issue on GitHub.', util.support_web + "?title=circhemy 404 error" +
+                "&body=URL: " + str(request.url) + "%0A%0APlease describe how the error occurred").\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
     return client.build_response(request, 404)
 
@@ -1445,20 +1507,17 @@ async def exception_handler_404(request: Request, exception: Exception) -> Respo
 @app.exception_handler(500)
 async def exception_handler_500(request: Request, exception: Exception) -> Response:
     with Client(ui.page('')) as client:
-        with ui.column().\
-                style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
-            ui.label('Error 500').\
-                style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.label('Internal server error').\
+        with ui.column().style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+            ui.label('Internal server error').style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+            ui.html("<strong>Exception</strong>").style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html(str(exception)).style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style('text-align: center; padding:10px;')
+            ui.label('Please contact the server administrator at ' + util.support_email + ' for additional support.').\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html("<a href=\"/\"><img src=\"static/error.png\"></a>").style(
-                'text-align: center; padding:10px;')
-            ui.label('Please contact the server administrator at '+
-                     util.support_email+' for additional support.').\
+            ui.link('Click here to report an issue on GitHub.', util.support_web + "?title=circhemy exception: " +
+                str(exception) + "&body=URL: " + str(request.url) + "%0A%0APlease describe how the error occurred").\
                 style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.link('Click here to report an issue on GitHub.', util.support_web).\
-                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-    return client.build_response(request, 404)
+    return client.build_response(request, 500)
 
 
 # Below: REST API data definitions and endpoint functions for
