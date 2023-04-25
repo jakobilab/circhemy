@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # Copyright (C) 2023 Tobias Jakobi
 #
 # @Author: Tobias Jakobi <tjakobi>
@@ -733,10 +732,8 @@ def ui_layout_add_footer_and_right_drawer() -> None:
         ui.label(util.program_name + " | software version " +
                  util.software_version + " | database version " +
                  util.database_version)
-        ui.link('Visit Jakobi Lab @ GitHub ',
-                'https://github.com/jakobilab/')
-        ui.link(' © 2023 Jakobi Lab ', 'https://jakobilab.org')
-
+        ui.link('© 2023 Jakobi Lab', 'https://jakobilab.org')
+        ui.link('Visit Jakobi Lab @ GitHub ', 'https://github.com/jakobilab/')
 
 
 def ui_query_remove_conditions(container) -> None:
@@ -933,8 +930,8 @@ async def page_application_display_circrna_profile():
     ui_layout_add_footer_and_right_drawer()
 
 
-@ui.page('/circrna/{circ_id}', title=util.program_name + " - circRNA foo")
-async def page_application_display_circrna_profile(circ_id: str):
+@ui.page('/circrna/{circ_id}', title=util.program_name_long)
+async def page_application_display_circrna_profile(circ_id: str, client: Client):
 
     ui_layout_add_head_html()
     ui_layout_add_header()
@@ -949,7 +946,6 @@ async def page_application_display_circrna_profile(circ_id: str):
 
             if len(output) > 1:
                 ui.html("Multiple circRNAs matching "+"("+str(len(output))+")"+":").style('font-size: 14pt;')
-
                 ui.html("&nbsp;").style('font-size: 14pt;')
 
             with ui.tabs() as tabs:
@@ -979,6 +975,7 @@ async def page_application_display_circrna_profile(circ_id: str):
                     ui.icon('donut_large').classes('text-2xl')
                     ui.html('CircRNA <u>without</u> CSNv1 annotation')
 
+    # circRNA not found
     if len(output) == 0:
 
         with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
@@ -987,15 +984,17 @@ async def page_application_display_circrna_profile(circ_id: str):
 
         # circRNA Name header
         ui.html("\""+circ_id+"\" is an unknown circRNA ID").style('font-size: 24pt;')
-
         ui.html('<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
 
+    # at least one circRNA found
     if len(output) >= 1:
 
+        # this is the name of the first tab, has to be known at time out panel setup
         first_tab = output[0][16] + ":" + str(output[0][17]) + "-" + str(output[0][18])+" ["+output[0][20]+"]"
 
         with ui.tab_panels(tabs, value=first_tab).style("background-color: #f8f8f8;"):
 
+            # for each circRNA hit, e.g. different circRNAs or different genomes
             for hit in range(0, len(output)):
 
                 output_dict = {}
@@ -1007,8 +1006,12 @@ async def page_application_display_circrna_profile(circ_id: str):
 
                     local_columns.insert(0, "Stable circhemy database ID")
 
+                    source_database_print = ""
+
                     for hit_id in range(0, len(local_columns)):
                         output_dict[local_columns[hit_id]] = output[hit][hit_id]
+                        if output[hit][hit_id] == circ_id:
+                            source_database_print = local_columns[hit_id]
 
                     output_dict['Coordinates'] = 1
                     output_dict['Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
@@ -1017,20 +1020,20 @@ async def page_application_display_circrna_profile(circ_id: str):
                     local_columns.append('Unspliced length')
 
                     with ui.row():
-
                         with ui.column():
-
                             with ui.column().style('width: 600px;'):
                                 with ui.card().style('width: 600px;font-size: 12pt;'). \
-                                        classes('column justify-between'). \
-                                        style("background-color: #d7e3f4;") as card:
-                                    ui.html(circ_id).style('font-size: 24pt;')
+                                        classes('column justify-between').style("background-color: #d7e3f4;") as card:
+                                    with ui.row():
+                                        with ui.column():
+                                            ui.html(circ_id).style('font-size: 24pt;')
+                                        with ui.column().classes("items-center"):
+                                            ui.label(source_database_print)
 
-                            if output_dict['CSNv1']:
-
+                            if output_dict['CSNv1'] and source_database_print != 'CSNv1':
                                 with ui.column().style('width: 600px;'):
                                     with ui.card().style('width: 600px;font-size: 12pt;'). \
-                                            classes('column justify-between'). \
+                                            classes('column justify-between').\
                                             style("background-color: #d7e3f4;") as card:
                                         ui.html(output_dict['CSNv1']).style('font-size: 20pt;')
 
@@ -1047,10 +1050,8 @@ async def page_application_display_circrna_profile(circ_id: str):
                                                                          "Strand",
                                                                          "Stable circhemy database ID"]:
                                             with ui.row():
-
                                                 with ui.column().style('width: 150px;'):
                                                     ui.html('<strong>' + local_columns[hit_id] + '</strong>')
-
                                                 with ui.column():
                                                     ui.html(ui_generate_external_link(local_columns[hit_id], output_dict)).\
                                                        style('align:center')
@@ -1096,7 +1097,14 @@ async def page_application_display_circrna_profile(circ_id: str):
 
     ui_layout_add_footer_and_right_drawer()
 
+    # update page title
+    # https://github.com/zauberzeug/nicegui/discussions/830#discussioncomment-5714587
+    await client.connected(timeout=5)
+    await ui.run_javascript(f'document.title = "{"Circular RNA "+ circ_id + " - " + util.program_name_long or "nothing"}";',
+
+                            respond=False)
 # content pages
+
 
 @ui.page('/about')
 async def page_about():
