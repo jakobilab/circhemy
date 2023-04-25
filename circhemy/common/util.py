@@ -26,6 +26,8 @@ class Util(object):
 
     program_name = "circhemy"
 
+    program_name_long = "The circhemy circRNA ID database"
+
     support_email = program_name+"@jakobilab.org"
 
     support_web = "https://github.com/jakobilab/" + program_name + "/issues/new"
