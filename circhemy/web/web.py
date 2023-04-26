@@ -529,7 +529,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                         + " target=\"_blank\">" \
                                         + str(item[0]) + "</a>"
 
-                elif item[0] != "NA" \
+                elif item[0] is not None \
                         and util.external_db_urls[item[1]] \
                         and not input_id:
                     tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
