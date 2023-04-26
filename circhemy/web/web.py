@@ -86,6 +86,7 @@ def main():
 
 # util functions
 
+
 class RedmineParser(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -172,8 +173,12 @@ def check_query_text_field() -> None:
         ui_convert_form_values['submit_query_button'].update()
 
 
-def add_if_not_in_list(input_list=[], item_list=[]):
+def add_if_not_in_list(input_list=None, item_list=None):
 
+    if item_list is None:
+        item_list = []
+    if input_list is None:
+        input_list = []
     for item in item_list:
         if item not in input_list:
             input_list.append(item)
@@ -257,8 +262,10 @@ def ui_generate_external_link(external_site: str, values: dict):
     return returnval
 
 
-def ui_result_table_get_coordinates(input_list=[]):
+def ui_result_table_get_coordinates(input_list=None):
 
+    if input_list is None:
+        input_list = []
     return_dict = {"Chr": "", "Start": "", "Stop": "", "Genome": ""}
 
     for item in return_dict:
@@ -297,12 +304,12 @@ def ui_load_example_data() -> None:
                                      # "hsa-MYH9_0116"
 
 
-
-
 def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 
     # initialize empty to allow for empty results
     output = ""
+
+    output_fields = ""
 
     # function is called from REST API
     if input_id and type(input_id) != list:
