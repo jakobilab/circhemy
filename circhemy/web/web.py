@@ -674,7 +674,7 @@ def ui_layout_generate_logo() -> None:
     ui.html("<a href=\"/\">" + util.program_name + "</a>").style(
         'text-align: center; font-size: 26pt;')
 
-    ui.image("http://localhost:8080/static/logo2.png"). \
+    ui.image("/static/logo2.png"). \
         tooltip("al·che·my - noun - The medieval forerunner of chemistry, "
                 "based on the supposed transformation of matter. "
                 "\"A seemingly magical process of transformation, "
