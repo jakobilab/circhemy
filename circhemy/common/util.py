@@ -358,6 +358,7 @@ class Util(object):
                                             " ON " + self.database_table_name + "_db_info.DB_ID = " +
                                             self.database_table_name + "_log.DB_ID" +
                                             " WHERE " +
+                                            " circhemy.CircRNA_ID == ? OR " +
                                             " CSNv1 == ? OR " +
                                             " circBase == ? OR " +
                                             " CircAtlas2 == ? OR " +
@@ -367,11 +368,13 @@ class Util(object):
                                             " Circpedia2 == ? OR " +
                                             " riboCIRC == ? OR " +
                                             " exorBase2 == ? OR " +
+                                            " ENSEMBL == ? OR " +
+                                            " Gene == ? OR " +
                                             " Arraystar == ?;", (
                                                 circrna_id, circrna_id, circrna_id,
                                                 circrna_id, circrna_id, circrna_id,
                                                 circrna_id, circrna_id, circrna_id,
-                                                circrna_id)).fetchall()
+                                                circrna_id, circrna_id, circrna_id, circrna_id)).fetchall()
 
         return sql_output
 

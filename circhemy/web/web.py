@@ -57,6 +57,7 @@ util = common.Util
 app.add_static_files('/favicon', Path(__file__).parent / 'favicon')
 app.add_static_files('/fonts', Path(__file__).parent / 'fonts')
 app.add_static_files('/static', Path(__file__).parent / 'static')
+app.add_static_files('/sitemap', 'web/sitemap/')
 
 # set up global variables
 
@@ -1010,7 +1011,7 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
 
                     for hit_id in range(0, len(local_columns)):
                         output_dict[local_columns[hit_id]] = output[hit][hit_id]
-                        if output[hit][hit_id] == circ_id:
+                        if str(output[hit][hit_id]) == circ_id:
                             source_database_print = local_columns[hit_id]
 
                     output_dict['Coordinates'] = 1
@@ -1101,7 +1102,6 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
     # https://github.com/zauberzeug/nicegui/discussions/830#discussioncomment-5714587
     await client.connected(timeout=5)
     await ui.run_javascript(f'document.title = "{"Circular RNA "+ circ_id + " - " + util.program_name_long or "nothing"}";',
-
                             respond=False)
 # content pages
 
