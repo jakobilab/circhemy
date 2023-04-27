@@ -555,10 +555,14 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 
         table = ui.aggrid(table_base_dict, html_columns=list(range(len(full_list))))
 
-        table.style("width: 90%")
-        table.style("text-align:center; "
-                    "margin-left:auto; "
-                    "margin-right:auto; ")
+        # table.style("width: 90%")
+        # table.style("height: 90%")
+        # table.style(add="text-align:center; "
+        #             "margin-left:auto; "
+        #             "margin-right:auto; ")
+        table.style(add='height: calc(100vh - 220px)')
+        table.props("domLayout='autoHeight'")
+        table.classes("ag-theme-balham")
         table.update()
 
         processed_output = processed_output \
@@ -602,13 +606,14 @@ def ui_file_upload_handler(file) -> None:
 
 def ui_layout_add_left_drawer(convert=False) -> None:
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
+            'background-color: #d7e3f4; width: 500px;').props('width=450 bordered'):
 
         ui_layout_generate_logo()
 
-        ui.label('Select input ID type:').style("text-decoration: underline;")
 
         if convert:
+            ui.label('Select input ID type:').style("text-decoration: underline;")
+
             # Manually adding Coordinates here, as it's not a real DB field
             ui_convert_form_values['db_checkbox'] = ui.select(
                 ["Coordinates"] + util.select_db_columns, value="Coordinates",
@@ -630,13 +635,19 @@ def ui_layout_add_left_drawer(convert=False) -> None:
 
             with ui.row():
                 with ui.column():
-                    for item in range(int(len(util.select_db_columns) / 2)):
+                    for item in range(int(len(util.select_db_columns) / 3)):
                         db_entries.append(
                             ui.checkbox(util.select_db_columns[item],
                                         value=util.active_db_columns[util.select_db_columns[item]]))
 
                 with ui.column():
-                    for item in range(int(len(util.select_db_columns) / 2),
+                    for item in range(int(len(util.select_db_columns) / 3), int((len(util.select_db_columns) / 3) * 2)):
+                        db_entries.append(
+                            ui.checkbox(util.select_db_columns[item],
+                                        value=util.active_db_columns[util.select_db_columns[item]]))
+
+                with ui.column():
+                    for item in range(int((len(util.select_db_columns) / 3) * 2),
                                       len(util.select_db_columns)):
                         db_entries.append(
                             ui.checkbox(util.select_db_columns[item],
@@ -681,18 +692,19 @@ def ui_layout_generate_logo() -> None:
     ui.html("<a href=\"/\">" + util.program_name + "</a>").style(
         'text-align: center; font-size: 26pt;')
 
-    ui.image("/static/logo2.png"). \
+    ui.image("/static/logo_small.png"). \
         tooltip("al·che·my - noun - The medieval forerunner of chemistry, "
                 "based on the supposed transformation of matter. "
                 "\"A seemingly magical process of transformation, "
-                "creation, or combination.\"")
+                "creation, or combination.\"").props('fit=contain').\
+        style("object-position: right bottom;").classes('w-120 h-60')
 
     # subtitle
     ui.html("The alchemy of<br/>circular RNA ID conversion"). \
         tooltip('...are shown on mouse over').style(
         'text-align: center; font-size: 16pt;')
 
-    ui.html("<br/>").style('text-align: center; font-size: 12t;')
+    # ui.html("<br/>").style('text-align: center; font-size: 12t;')
 
 
 def ui_layout_add_header() -> None:
