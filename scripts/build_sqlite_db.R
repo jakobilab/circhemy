@@ -58,6 +58,20 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   # assign species name to column
   input_with_strand$Species <- species
 
+  # only available for human and mouse (hg19/mm9)
+  if (species == "homo_sapiens" || species == "mus_musculus"){
+    message("Splicing in alternate circBase IDs")
+    circbase <- read.csv(paste0("../circhemy/data/circbase/",species,"_circBase_alt.csv"), sep="\t", header=T)[,c("circBase","circBase_alt")]
+    input_with_strand <- merge(circbase, input_with_strand, by.x=c("circBase"),  by.y=c("circBase"), all.y=T)[, union(names(circbase), names(input_with_strand))]
+  } else {
+    circbase <- as.data.frame(rep(NA,nrow(input_with_strand)))
+    colnames(circbase) <- "circBase_alt"
+    input_with_strand <-cbind(circbase,input_with_strand)
+  }
+
+  # fix column order
+  input_with_strand <- input_with_strand[,c("Species", "CircAtlas2", column_names[3], column_names[4], "circBase", "circBase_alt", "circRNADb", "deepBase2", "Circpedia2", "Strand")]
+
   message("Pre-reading CSNv1 data to get gene names")
 
   csn <- read.csv(paste0("../circhemy/data/csnv1/",ribocirc_species,"_CSNv1.csv"), sep="\t", header=F)
@@ -147,7 +161,7 @@ process_input_tables = function(data_file, column_names, species, bed_file, ribo
   }
 
   message("Splitting by genome build")
-  
+
   # two new data frames, each only with one set of coordinates
   build1 <- input_with_strand[,-c(6)]
   build2 <- input_with_strand[,-c(7)]
@@ -296,6 +310,7 @@ bind_dataframe <- bind_dataframe[,c(
   "ENSEMBL",
   "Entrez",
   "circBase",
+  "circBase_alt",
   "CircAtlas2",
   "circRNADb",
   "deepBase2",

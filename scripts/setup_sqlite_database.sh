@@ -45,6 +45,7 @@ UPDATE circhemy SET ENSEMBL= NULL WHERE ENSEMBL= 'NA';
 UPDATE circhemy SET Description= NULL WHERE Description= '';
 UPDATE circhemy SET Description= NULL WHERE Description= 'NA';
 UPDATE circhemy SET circBase= NULL WHERE circBase= 'NA';
+UPDATE circhemy SET circBase_alt= NULL WHERE circBase_alt= 'NA';
 UPDATE circhemy SET CircAtlas2= NULL WHERE CircAtlas2= 'NA';
 UPDATE circhemy SET circRNADb= NULL WHERE circRNADb= 'NA';
 UPDATE circhemy SET deepBase2= NULL WHERE deepBase2= 'NA';

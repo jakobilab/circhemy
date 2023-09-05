@@ -93,10 +93,10 @@ def process_input_data(input_data: str, db_connection):
         entry = [None if x == 'NA' or x == '' else x for x in entry]
 
         sqlite_insert_query = """INSERT INTO circhemy
-                          (Species, Gene, Description, ENSEMBL, Entrez, circBase, CircAtlas2, circRNADb, deepBase2,
+                          (Species, Gene, Description, ENSEMBL, Entrez, circBase, circBase_alt, CircAtlas2, circRNADb, deepBase2,
                            Circpedia2, circBank, riboCIRC, exoRBase2, Arraystar, CSNv1, Chr, Start, Stop, Strand,
                            Genome, Pubmed)
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
 
         db_connection.execute(sqlite_insert_query, entry)
 

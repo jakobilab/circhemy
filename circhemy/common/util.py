@@ -57,6 +57,7 @@ class Util(object):
         "Entrez",
         "Description",
         "circBase",
+        "circBase_alt",
         "CircAtlas2",
         "circRNADb",
         "circBank",
