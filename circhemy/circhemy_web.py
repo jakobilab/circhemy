@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Tobias Jakobi
+# Copyright (C) 2024 Tobias Jakobi
 #
 # @Author: Tobias Jakobi <tjakobi>
 # @Email:  tjakobi@arizona.edu
