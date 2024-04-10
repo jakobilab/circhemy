@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `circhemy` (
     `ENSEMBL` TEXT,
     `Entrez` INTEGER,
   	`circBase` TEXT,
+  	`circBase_alt` TEXT,
 	`CircAtlas2` TEXT,
 	`circRNADb`	TEXT,
 	`deepBase2`	TEXT,
@@ -24,13 +25,11 @@ CREATE TABLE IF NOT EXISTS `circhemy` (
 	`Genome` TEXT NOT NULL,
 	`Pubmed` INTEGER
 );
-DROP TABLE IF EXISTS `circhemy_db_info`;
 CREATE TABLE IF NOT EXISTS `circhemy_db_info` (
     `DB_ID` INTEGER PRIMARY KEY,
 	`Version` TEXT NOT NULL UNIQUE,
     `Date` INTEGER NOT NULL
 );
-DROP TABLE IF EXISTS `circhemy_log`;
 CREATE TABLE IF NOT EXISTS `circhemy_log` (
     `CircRNA_ID` INTEGER PRIMARY KEY,
     `Action` INTEGER,
