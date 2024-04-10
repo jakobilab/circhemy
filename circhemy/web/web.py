@@ -79,8 +79,6 @@ def main():
     # run main application
     ui.run(title=util.program_name+" "+util.software_version,
            show=False,
-           exclude="audio,chart colors,interactive_image,joystick,"
-                   "keyboard,log,scene,video",
            binding_refresh_interval=0.1
            )
 
