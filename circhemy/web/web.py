@@ -1569,7 +1569,7 @@ class ConvertModel(BaseModel):
         return v
 
     @validator('input', allow_reuse=True)
-    def database_name_check(cls, v):
+    def database_name_check_input(cls, v):
 
         fields_allowed = list(util.external_db_urls.keys())
 
@@ -1581,7 +1581,7 @@ class ConvertModel(BaseModel):
         return v
 
     @validator('output', each_item=True)
-    def database_name_check(cls, v):
+    def database_name_check_output(cls, v):
 
         fields_allowed = list(util.external_db_urls.keys())
 
