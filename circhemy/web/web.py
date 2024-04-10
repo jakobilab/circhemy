@@ -739,11 +739,11 @@ def ui_layout_add_footer_and_right_drawer() -> None:
 
         ui.label('Database by species/genome')
 
-        chart = ui.chart(ui_convert_form_values['chart']).classes('w-full h-64') \
+        chart = ui.highchart(ui_convert_form_values['chart']).classes('w-full h-64') \
             .style("height: 350px")
 
         ui.label('Database by CircRNA ID')
-        chart2 = ui.chart(ui_convert_form_values['chart2']).classes('w-full h-64') \
+        chart2 = ui.highchart(ui_convert_form_values['chart2']).classes('w-full h-64') \
             .style("height: 350px")
 
     with ui.footer().style('background-color: #3874c8'):
