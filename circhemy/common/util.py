@@ -76,6 +76,7 @@ class Util(object):
         "Entrez": False,
         "Description": False,
         "circBase": True,
+        "circBase_alt": True,
         "CircAtlas2": True,
         "circRNADb": True,
         "circBank": True,
