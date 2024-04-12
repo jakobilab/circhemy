@@ -57,7 +57,7 @@ class Util(object):
         "Entrez",
         "Description",
         "circBase",
-        "circBase_alt",
+        # "circBase_alt",
         "CircAtlas2",
         "circRNADb",
         "circBank",
@@ -76,7 +76,7 @@ class Util(object):
         "Entrez": False,
         "Description": False,
         "circBase": True,
-        "circBase_alt": True,
+        # "circBase_alt": True,
         "CircAtlas2": True,
         "circRNADb": True,
         "circBank": True,
@@ -95,6 +95,7 @@ class Util(object):
         "ENSEMBL",
         "Entrez",
         "circBase",
+        "circBase_alt",
         "CircAtlas2",
         "circRNADb",
         "deepBase2",
@@ -119,6 +120,7 @@ class Util(object):
                                                     "Genome"]
 
     external_db_urls = {"circBase": "http://www.circbase.org/cgi-bin/singlerecord.cgi?id=",
+                        "circBase_alt": "http://www.circbase.org/cgi-bin/singlerecord.cgi?id=",
                         "CircAtlas2": "http://159.226.67.237:8080/new/circ_detail.php?ID=",
                         "Circpedia2": "/circrna/",
                         "circBank": "http://www.circbank.cn/infoCirc.html?id=",
