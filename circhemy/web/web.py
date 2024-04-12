@@ -35,7 +35,6 @@ import circhemy.common.util as common
 
 from datetime import datetime
 
-
 # core nicegui and web imports
 from fastapi import Request, Response
 from nicegui import Client, app, ui
@@ -71,16 +70,17 @@ ui_query_forms = list()
 util.setup_database(util, util.database_location)
 
 # initialize statistics chart on the righthand side
-ui_convert_form_values['chart'], ui_convert_form_values['dbsize'],\
+ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
     ui_convert_form_values['chart2'] = util.database_stats(util)
 
 
 def main():
     # run main application
-    ui.run(title=util.program_name+" "+util.software_version,
+    ui.run(title=util.program_name + " " + util.software_version,
            show=False,
            binding_refresh_interval=0.1
            )
+
 
 # util functions
 
@@ -90,7 +90,7 @@ class RedmineParser(HTMLParser):
         super().__init__()
         self.reset()
         self.strict = False
-        self.convert_charrefs= True
+        self.convert_charrefs = True
         self.text = StringIO()
 
     def handle_data(self, d):
@@ -106,7 +106,8 @@ def redmine_remove_tags(html):
     return s.get_data()
 
 
-def check_circrna_input_regex(strg, search=re.compile(r'[^A-Za-z0-9_\-|:\n\t]').search):
+def check_circrna_input_regex(strg, search=re.compile(
+    r'[^A-Za-z0-9_\-|:\n\t]').search):
     return not bool(search(strg))
 
 
@@ -126,7 +127,8 @@ def check_text_field_input(upload_data) -> str:
         ui_convert_form_values['submit_notification'].set_text(
             ui_update_found_circrnas(circ_list))
 
-        return "Submit " + str(circ_list.count('\n')) + " circRNAs for ID conversion"
+        return "Submit " + str(
+            circ_list.count('\n')) + " circRNAs for ID conversion"
 
     elif not circ_list:
         ui_convert_form_values['submit_button'].props("disabled=true")
@@ -155,7 +157,6 @@ def check_if_db_is_selected(form_values) -> List[Any]:
 
 
 def check_query_text_field() -> None:
-
     if 'submit_query_button' in ui_convert_form_values:
         all_good = True
 
@@ -164,7 +165,8 @@ def check_query_text_field() -> None:
                 all_good = False
 
         if all_good:
-            ui_convert_form_values['submit_query_button'].props(remove="disabled=true")
+            ui_convert_form_values['submit_query_button'].props(
+                remove="disabled=true")
         else:
             ui_convert_form_values['submit_query_button'].props("disabled=true")
 
@@ -172,7 +174,6 @@ def check_query_text_field() -> None:
 
 
 def add_if_not_in_list(input_list=None, item_list=None):
-
     if item_list is None:
         item_list = []
     if input_list is None:
@@ -185,7 +186,6 @@ def add_if_not_in_list(input_list=None, item_list=None):
 
 
 def ui_generate_readable_coordinate(value: int):
-
     return f'{value:,}'
 
 
@@ -204,9 +204,10 @@ def ui_generate_external_link(external_site: str, values: dict):
 
     print_strand = ""
     if values['Strand']:
-        print_strand = " ["+values['Strand']+"]"
+        print_strand = " [" + values['Strand'] + "]"
 
-    print_pos = values['Chr'] + ": " + f'{tmp_start:,}' + " - " + f'{tmp_stop:,}' + print_strand
+    print_pos = values[
+                    'Chr'] + ": " + f'{tmp_start:,}' + " - " + f'{tmp_stop:,}' + print_strand
 
     if external_site == "Coordinates" and values["Coordinates"]:
         # build pos format: chrXZY:1234-5789
@@ -230,29 +231,29 @@ def ui_generate_external_link(external_site: str, values: dict):
 
         build = values['Genome']
 
-        returnval = "<a style=\"text-decoration: underline;\" href=\"/circrna/" +\
+        returnval = "<a style=\"text-decoration: underline;\" href=\"/circrna/" + \
                     values['CSNv1'] + "\">" + values['CSNv1'] + \
                     "</a> <a style=\"text-decoration: underline;" \
-                       "\" href=\"" + util.external_db_urls["CSNv1"] \
+                    "\" href=\"" + util.external_db_urls["CSNv1"] \
                     + "db=" + build + "&" \
-                    + "position=" + pos + "&hgct_customText=https://static.jakobilab.org/circhemy/" +\
+                    + "position=" + pos + "&hgct_customText=https://static.jakobilab.org/circhemy/" + \
                     values['Genome'] + ".bed\"" \
                     + " target=\"_blank\">[view exons in Genome Browser]</a>"
 
     elif external_site == "Species" or external_site == "Gene":
 
-        returnval = "<i>"+values[external_site].replace("_", " ")+"</i>"
+        returnval = "<i>" + values[external_site].replace("_", " ") + "</i>"
 
     elif values[external_site] and util.external_db_urls[
-                                external_site]:
+        external_site]:
         returnval = "<a style=\"text-decoration: underline;" \
-                            "\" href=\"" + util.external_db_urls[
-                                external_site] \
-                            + str(values[external_site]) + "\" target=\"_blank\">" \
-                            + str(values[external_site]) + "</a>"
+                    "\" href=\"" + util.external_db_urls[
+                        external_site] \
+                    + str(values[external_site]) + "\" target=\"_blank\">" \
+                    + str(values[external_site]) + "</a>"
 
     elif values[external_site] and not util.external_db_urls[
-                                external_site]:
+        external_site]:
         returnval = str(values[external_site])
     else:
         returnval = ""
@@ -261,7 +262,6 @@ def ui_generate_external_link(external_site: str, values: dict):
 
 
 def ui_result_table_get_coordinates(input_list=None):
-
     if input_list is None:
         input_list = []
     return_dict = {"Chr": "", "Start": "", "Stop": "", "Genome": ""}
@@ -278,32 +278,31 @@ def ui_result_table_get_coordinates(input_list=None):
 
 def ui_load_example_data() -> None:
     ui_convert_form_values['textfield'].value = \
-                                        "chr1:100121447|100132793\n" \
-                                        "chr1:100121550|100122379\n" \
-                                        "chr1:100122380|100125942\n" \
-                                        "chr1:100123210|100125942\n" \
-                                        "chr1:1001237|1001530\n" \
-                                        "chr1:100123872|100125942\n" \
-                                        "chr1:100133404|100133583\n" \
-                                        "chr1:100136882|100137085\n" \
-                                        "chr1:100136882|100139711\n" \
-                                        "chr1:100136882|100140514\n" \
-                                     # "hsa-MYH9_0004\n" \
-                                     # "hsa-MYH9_0005\n" \
-                                     # "hsa-MYH10_0003\n" \
-                                     # "hsa-MYH10_0016\n" \
-                                     # "hsa-MYH10_0044\n" \
-                                     # "hsa-MYH10_0075\n" \
-                                     # "hsa-MYH10_0018\n" \
-                                     # "hsa-MYH10_0002\n" \
-                                     # "hsa-MYH14_0011\n" \
-                                     # "hsa-MYH14_0013\n" \
-                                     # "hsa-MYH14_0010\n" \
-                                     # "hsa-MYH9_0116"
+        "chr1:100121447|100132793\n" \
+        "chr1:100121550|100122379\n" \
+        "chr1:100122380|100125942\n" \
+        "chr1:100123210|100125942\n" \
+        "chr1:1001237|1001530\n" \
+        "chr1:100123872|100125942\n" \
+        "chr1:100133404|100133583\n" \
+        "chr1:100136882|100137085\n" \
+        "chr1:100136882|100139711\n" \
+        "chr1:100136882|100140514\n" \
+        # "hsa-MYH9_0004\n" \
+    # "hsa-MYH9_0005\n" \
+    # "hsa-MYH10_0003\n" \
+    # "hsa-MYH10_0016\n" \
+    # "hsa-MYH10_0044\n" \
+    # "hsa-MYH10_0075\n" \
+    # "hsa-MYH10_0018\n" \
+    # "hsa-MYH10_0002\n" \
+    # "hsa-MYH14_0011\n" \
+    # "hsa-MYH14_0013\n" \
+    # "hsa-MYH14_0010\n" \
+    # "hsa-MYH9_0116"
 
 
 def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
-
     # initialize empty to allow for empty results
     output = ""
 
@@ -343,7 +342,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                              + tmp + "%\" "
             elif constraint.operator2 == "is":
                 sql_query += constraint.field + " == \"" \
-                             + constraint.query+ "\" "
+                             + constraint.query + "\" "
             elif constraint.operator2 == ">":
                 sql_query += constraint.field + " > \"" \
                              + constraint.query + "\" "
@@ -376,11 +375,13 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         output = util.run_simple_select_query(util,
                                               output_fields,
                                               circrna_list,
-                                              ui_convert_form_values['db_checkbox'].value
+                                              ui_convert_form_values[
+                                                  'db_checkbox'].value
                                               )
 
         if ui_convert_form_values['db_checkbox'].value not in output_fields \
-                and ui_convert_form_values['db_checkbox'].value != "Coordinates":
+                and ui_convert_form_values[
+            'db_checkbox'].value != "Coordinates":
             output_fields.insert(0, ui_convert_form_values['db_checkbox'].value)
 
     # function called from web query module
@@ -454,7 +455,6 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         # make sure we only call this if called from web,
         # otherwise this field is not initialized
         if not input_id:
-
             processed_output = processed_output + item \
                                + ui_convert_form_values['select2'].value
 
@@ -520,9 +520,9 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                         "\" href=\"" + util.external_db_urls[
                                             "Genome-Browser"] \
                                         + "db=" + build + "&" \
-                                        + "pos=" + pos  \
-                                        + "&hgct_customText=" +\
-                                        util.external_db_urls["CSNv1"]\
+                                        + "pos=" + pos \
+                                        + "&hgct_customText=" + \
+                                        util.external_db_urls["CSNv1"] \
                                         + build + ".bed\"" \
                                         + " target=\"_blank\">" \
                                         + str(item[0]) + "</a>"
@@ -551,7 +551,8 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
     # only set up web table if we are calling from web
     if not input_id:
 
-        table = ui.aggrid(table_base_dict, html_columns=list(range(len(full_list))))
+        table = ui.aggrid(table_base_dict,
+                          html_columns=list(range(len(full_list))))
 
         # table.style("width: 90%")
         # table.style("height: 90%")
@@ -604,76 +605,94 @@ def ui_file_upload_handler(file) -> None:
 
 def ui_layout_add_left_drawer(convert=False) -> None:
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; width: 500px;').props('width=450 bordered'):
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
 
-        ui_layout_generate_logo()
+        with ui.column().classes('q-py-none').classes('q-my-none'):
 
+            ui_layout_generate_logo()
 
-        if convert:
-            ui.label('Select input ID type:').style("text-decoration: underline;")
+        with ui.column().classes('q-py-none').classes('q-my-none'):
 
-            # Manually adding Coordinates here, as it's not a real DB field
-            ui_convert_form_values['db_checkbox'] = ui.select(
-                ["Coordinates"] + util.select_db_columns, value="Coordinates",
-                label="ID format").style("width: 90%")
+            if convert:
+                ui.label('Step 1: select input ID type:').style(
+                    "text-decoration: underline;")
 
-        with ui.column():
-            ui.label('')
-            ui.label('Select output fields:').style(
-                "text-decoration: underline;")
+                # Manually adding Coordinates here, as it's not a real DB field
+                ui_convert_form_values['db_checkbox'] = ui.select(
+                    ["Coordinates"] + util.select_db_columns,
+                    value="Coordinates",
+                    label="ID format").style("width: 320px")
 
-            # ui.label("Genomic Coordinates")
-            # with ui.row():
-            #     tmp = [ui.checkbox('Chr', value=True),
-            #            ui.checkbox('Start', value=True),
-            #            ui.checkbox('Stop', value=True)]
+                with ui.column().classes('q-py-none').classes('q-my-none'):
+                    ui.label('Step 2: select output fields:').style(
+                        "text-decoration: underline;")
 
-            db_entries = []
-            ui.label("Databases")
+                    # ui.label("Genomic Coordinates")
+                    # with ui.row():
+                    #     tmp = [ui.checkbox('Chr', value=True),
+                    #            ui.checkbox('Start', value=True),
+                    #            ui.checkbox('Stop', value=True)]
 
-            with ui.row():
+                    db_entries = []
+                    ui.label("CircRNA databases & external IDs")
+
+                    with ui.row().classes('q-py-none'):
+                        with ui.column():
+                            for item in range(
+                                    int(len(util.select_db_columns) / 3)):
+                                db_entries.append(
+                                    ui.checkbox(util.select_db_columns[item],
+                                                value=util.active_db_columns[
+                                                    util.select_db_columns[
+                                                        item]]).props(
+                                        'size=xs'))
+
+                        with ui.column():
+                            for item in range(
+                                    int(len(util.select_db_columns) / 3),
+                                    int((len(util.select_db_columns) / 3) * 2)):
+                                db_entries.append(
+                                    ui.checkbox(util.select_db_columns[item],
+                                                value=util.active_db_columns[
+                                                    util.select_db_columns[
+                                                        item]]).props(
+                                        'size=xs'))
+
+                        with ui.column():
+                            for item in range(
+                                    int((len(util.select_db_columns) / 3) * 2),
+                                    len(util.select_db_columns)):
+                                db_entries.append(
+                                    ui.checkbox(util.select_db_columns[item],
+                                                value=util.active_db_columns[
+                                                    util.select_db_columns[
+                                                        item]]).props(
+                                        'size=xs'))
+
+                    checkbox_list = db_entries
+                    ui_convert_form_values['db_checkboxes'] = checkbox_list
+
                 with ui.column():
-                    for item in range(int(len(util.select_db_columns) / 3)):
-                        db_entries.append(
-                            ui.checkbox(util.select_db_columns[item],
-                                        value=util.active_db_columns[util.select_db_columns[item]]))
+                    ui.label('Step 3: select output format:').style(
+                        "text-decoration: underline;")
 
-                with ui.column():
-                    for item in range(int(len(util.select_db_columns) / 3), int((len(util.select_db_columns) / 3) * 2)):
-                        db_entries.append(
-                            ui.checkbox(util.select_db_columns[item],
-                                        value=util.active_db_columns[util.select_db_columns[item]]))
+                    ui_convert_form_values['select2'] = ui.select(
+                        {"\t": "Tab-delimited '\\t'",
+                         ",": "Comma-delimited ','",
+                         ";": "Semicolon-delimited ';'"},
+                        value="\t",
+                        label="Separator character") \
+                        .style("width: 320px")
 
-                with ui.column():
-                    for item in range(int((len(util.select_db_columns) / 3) * 2),
-                                      len(util.select_db_columns)):
-                        db_entries.append(
-                            ui.checkbox(util.select_db_columns[item],
-                                        value=util.active_db_columns[util.select_db_columns[item]]))
-
-            checkbox_list = db_entries
-            ui_convert_form_values['db_checkboxes'] = checkbox_list
-            ui.label('')
-
-        with ui.column():
-            ui.label('Select Output Format:').style(
-                "text-decoration: underline;")
-
-            ui_convert_form_values['select2'] = ui.select({"\t": "Tab-delimited [\\t]",
-                                                ",": "Comma-delimited [,]",
-                                                ";": "Semicolon-delimited [;]"},
-                                                          value="\t",
-                                                          label="Separator character") \
-                .style("width: 90%")
-
-            ui_convert_form_values['select3'] = ui.select({"NA": "NA",
-                                                "\t": "Tab [\\t]",
-                                                "": "Don't print anything"},
-                                                          value="NA",
-                                                          label="Placeholder"
-                                                     " for unavailable "
-                                                     "fields") \
-                .style("width: 90%")
+                    ui_convert_form_values['select3'] = ui.select({"NA": "NA",
+                                                                   "\t": "Tab [\\t]",
+                                                                   "": "Don't print anything"},
+                                                                  value="NA",
+                                                                  label="Placeholder"
+                                                                        " for unavailable "
+                                                                        "fields") \
+                        .style("width: 320px")
 
 
 def ui_layout_add_head_html() -> None:
@@ -687,22 +706,18 @@ def ui_layout_add_head_html() -> None:
 
 def ui_layout_generate_logo() -> None:
     # program name as link
-    ui.html("<a href=\"/\">" + util.program_name + "</a>").style(
-        'text-align: center; font-size: 26pt;')
+    ui.html(util.program_name).style(
+        'text-align: center; font-size: 22pt;').style("width: 320px").classes(
+        'q-py-none')
 
-    ui.image("/static/logo_small.png"). \
-        tooltip("al·che·my - noun - The medieval forerunner of chemistry, "
-                "based on the supposed transformation of matter. "
-                "\"A seemingly magical process of transformation, "
-                "creation, or combination.\"").props('fit=contain').\
-        style("object-position: right bottom;").classes('w-120 h-60')
+    ui.html("<img src='/static/logo_small.png'/>").style(
+        "width: 320px").classes('q-py-none').classes('q-px-xl')
 
     # subtitle
     ui.html("The alchemy of<br/>circular RNA ID conversion"). \
         tooltip('...are shown on mouse over').style(
-        'text-align: center; font-size: 16pt;')
-
-    # ui.html("<br/>").style('text-align: center; font-size: 12t;')
+        'text-align: center; font-size: 16pt;').style("width: 320px").classes(
+        'q-py-none')
 
 
 def ui_layout_add_header() -> None:
@@ -714,7 +729,7 @@ def ui_layout_add_header() -> None:
         'REST API access': '/rest',
         'About': '/about'
     }
-    with ui.header() \
+    with ui.header().style("height: 40px").classes('q-pa-xs') \
             .classes('items-center duration-400 p-0 px-4 no-wrap') \
             .style('box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)'):
 
@@ -739,19 +754,22 @@ def ui_layout_add_footer_and_right_drawer() -> None:
 
         ui.label('Database by species/genome')
 
-        chart = ui.highchart(ui_convert_form_values['chart']).classes('w-full h-64') \
+        chart = ui.highchart(ui_convert_form_values['chart']).classes(
+            'w-full h-64') \
             .style("height: 350px")
 
         ui.label('Database by CircRNA ID')
-        chart2 = ui.highchart(ui_convert_form_values['chart2']).classes('w-full h-64') \
+        chart2 = ui.highchart(ui_convert_form_values['chart2']).classes(
+            'w-full h-64') \
             .style("height: 350px")
 
-    with ui.footer().style('background-color: #3874c8'):
-        ui.label(util.program_name + " | software version " +
+    with ui.footer().style('background-color: #3874c8').style(
+            "height: 30px").classes('q-pa-xs'):
+        ui.label(" software version " +
                  util.software_version + " | database version " +
                  util.database_version)
-        ui.link('© 2024 Jakobi Lab', 'https://jakobilab.org')
-        ui.link('Visit Jakobi Lab @ GitHub ', 'https://github.com/jakobilab/')
+        ui.link('| Jakobi Lab @ GitHub ', 'https://github.com/jakobilab/')
+        ui.link(' | © 2024 Jakobi Lab', 'https://jakobilab.org')
 
 
 def ui_query_remove_conditions(container) -> None:
@@ -816,7 +834,8 @@ track of known circRNAs and their identifiers.
         placeholder='start typing',
         on_change=lambda e: ui_convert_form_values['submit_button'].
         set_text(check_text_field_input(upload_data=None))). \
-        props('type=textarea rows=30').style("width: 60%; ")
+        props('type=textarea rows=20').style(
+        "width: 100%; background-color: #ffffff;").classes('q-pa-md')
 
     ui_convert_form_values['or'] = ui.label('- OR -')
 
@@ -825,7 +844,7 @@ track of known circRNAs and their identifiers.
               "2) upload file via button to the right "
               "3) press 'convert circRNA IDs' button",
         on_upload=lambda e: ui_file_upload_handler(e.files[0])).style(
-        "width: 60%")
+        "width: 100%")
 
     with ui.row():
         ui_convert_form_values['submit_button'] = \
@@ -836,8 +855,9 @@ track of known circRNAs and their identifiers.
             ui.button('Load example data', on_click=lambda:
             ui_load_example_data())
 
-    ui_convert_form_values['circrna_found'] = ui.linear_progress(show_value=False,
-                                                                 value=0).style(
+    ui_convert_form_values['circrna_found'] = ui.linear_progress(
+        show_value=False,
+        value=0).style(
         "width: 60%; ")
 
     ui_convert_form_values['circrna_found'].set_visibility(False)
@@ -858,7 +878,8 @@ async def page_application_query():
 
     ui_convert_form_values['mode'] = "query"
 
-    ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], ui_convert_form_values[
+    ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
+    ui_convert_form_values[
         'chart2'] = util.database_stats(util)
 
     ui_query_add_conditions(ui.column(), new=False)
@@ -878,7 +899,8 @@ async def page_application_query():
             ui.button('Remove condition', on_click=lambda:
             ui_query_remove_conditions(condition_row))
 
-    ui_convert_form_values['circrna_found'] = ui.linear_progress(show_value=False, value=0).style("width: 60%; ")
+    ui_convert_form_values['circrna_found'] = ui.linear_progress(
+        show_value=False, value=0).style("width: 60%; ")
 
     ui_convert_form_values['circrna_found'].set_visibility(False)
 
@@ -899,7 +921,8 @@ async def page_application_display_results():
     # this just makes sure we built the landing page first
     if 'mode' in ui_convert_form_values:
 
-        processed_output,ui_convert_form_values['table2'] = ui_generate_result_table()
+        processed_output, ui_convert_form_values[
+            'table2'] = ui_generate_result_table()
 
         if not os.path.isdir("tmp/"):
             os.makedirs("tmp/")
@@ -937,20 +960,22 @@ async def page_application_display_circrna_profile():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
-        ui_layout_generate_logo()
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
+        # circRNA Name header
+        ui.html("URL does not contain a known circRNA ID").style(
+            'font-size: 24pt;')
 
-    # circRNA Name header
-    ui.html("URL does not contain a known circRNA ID").style('font-size: 24pt;')
+        ui.html(
+            '<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
 
-    ui.html('<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
-
-    ui_layout_add_footer_and_right_drawer()
+        ui_layout_add_footer_and_right_drawer()
 
 
 @ui.page('/circrna/{circ_id}', title=util.program_name_long)
-async def page_application_display_circrna_profile(circ_id: str, client: Client):
-
+async def page_application_display_circrna_profile(circ_id: str,
+                                                   client: Client):
     ui_layout_add_head_html()
     ui_layout_add_header()
 
@@ -958,16 +983,20 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
 
     if len(output) > 0:
 
-        with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
+        with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+                'background-color: #d7e3f4;').props('width=390').classes(
+            'q-py-none').classes('q-my-none'):
 
             ui_layout_generate_logo()
 
             if len(output) > 1:
-                ui.html("Multiple circRNAs matching "+"("+str(len(output))+")"+":").style('font-size: 14pt;')
+                ui.html("Multiple circRNAs matching " + "(" + str(
+                    len(output)) + ")" + ":").style('font-size: 14pt;')
                 ui.html("&nbsp;").style('font-size: 14pt;')
 
             with ui.tabs() as tabs:
-                tabs.style('background-color: #d7e3f4; height: 50%; border-radius: 0px;')
+                tabs.style(
+                    'background-color: #d7e3f4; height: 50%; border-radius: 0px;')
                 tabs.props("vertical")
                 tabs.props("dense")
                 tabs.props("no-caps")
@@ -976,15 +1005,20 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
                 tabs.props('align="left"')
 
                 for hit in range(0, len(output)):
-                    if output[hit][15]:
-                        ui.tab(output[hit][16] + ":" + str(
-                            output[hit][17]) + "-" + str(output[hit][18])+" ["+output[hit][20]+"]",
-                               icon='change_circle').style("justify-content: initial; background-color: #d7e3f4; ")
+
+                    if output[hit][16]:
+                        ui.tab(output[hit][17] + ":" + str(
+                            output[hit][18]) + "-" + str(
+                            output[hit][19]) + " [" + output[hit][21] + "]",
+                               icon='change_circle').style(
+                            "justify-content: initial; background-color: #d7e3f4; ")
                     else:
-                        ui.tab(output[hit][16] + ":" + str(
-                            output[hit][17]) + "-" + str(output[hit][18])+" ["+output[hit][20]+"]",
-                               icon='donut_large').style("justify-content: initial; background-color: #d7e3f4; ")
-                
+                        ui.tab(output[hit][17] + ":" + str(
+                            output[hit][18]) + "-" + str(
+                            output[hit][19]) + " [" + output[hit][21] + "]",
+                               icon='donut_large').style(
+                            "justify-content: initial; background-color: #d7e3f4; ")
+
                 ui.html("&nbsp;").style('font-size: 14pt;')
                 with ui.row():
                     ui.icon('change_circle').classes('text-2xl')
@@ -995,30 +1029,36 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
 
     # circRNA not found
     if len(output) == 0:
-
-        with ui.left_drawer(top_corner=True, bottom_corner=False).style('background-color: #d7e3f4; '):
-
+        with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+                'background-color: #d7e3f4;').props('width=390').classes(
+            'q-py-none').classes('q-my-none'):
             ui_layout_generate_logo()
 
         # circRNA Name header
-        ui.html("\""+circ_id+"\" is an unknown circRNA ID").style('font-size: 24pt;')
-        ui.html('<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
+        ui.html("\"" + circ_id + "\" is an unknown circRNA ID").style(
+            'font-size: 24pt;')
+        ui.html(
+            '<br/><a href=\"/query/\">Click here to '
+            'search the circhemy\'s circRNA database</a>')
 
     # at least one circRNA found
     if len(output) >= 1:
 
         # this is the name of the first tab, has to be known at time out panel setup
-        first_tab = output[0][16] + ":" + str(output[0][17]) + "-" + str(output[0][18])+" ["+output[0][20]+"]"
+        first_tab = output[0][17] + ":" + str(output[0][18]) + "-" + str(
+            output[0][19]) + " [" + output[0][21] + "]"
 
-        with ui.tab_panels(tabs, value=first_tab).style("background-color: #f8f8f8;"):
+        with ui.tab_panels(tabs, value=first_tab).style(
+                "background-color: #f8f8f8;"):
 
             # for each circRNA hit, e.g. different circRNAs or different genomes
             for hit in range(0, len(output)):
 
                 output_dict = {}
 
-                with ui.tab_panel(output[hit][16] + ":" + str(
-                        output[hit][17]) + "-" + str(output[hit][18])+" ["+output[hit][20]+"]"):
+                with ui.tab_panel(output[hit][17] + ":" + str(
+                        output[hit][18]) + "-" + str(output[hit][19]) + " [" +
+                                  output[hit][21] + "]"):
 
                     local_columns = util.all_db_columns.copy()
 
@@ -1032,7 +1072,8 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
                             source_database_print = local_columns[hit_id]
 
                     output_dict['Coordinates'] = 1
-                    output_dict['Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
+                    output_dict[
+                        'Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
 
                     local_columns.append('Coordinates')
                     local_columns.append('Unspliced length')
@@ -1040,25 +1081,35 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
                     with ui.row():
                         with ui.column():
                             with ui.column().style('width: 600px;'):
-                                with ui.card().style('width: 600px;font-size: 12pt;'). \
-                                        classes('column justify-between').style("background-color: #d7e3f4;") as card:
+                                with ui.card().style(
+                                        'width: 600px;font-size: 12pt;'). \
+                                        classes('column justify-between').style(
+                                    "background-color: #d7e3f4;") as card:
                                     with ui.row():
                                         with ui.column():
-                                            ui.html(circ_id).style('font-size: 24pt;')
-                                        with ui.column().classes("items-center"):
+                                            ui.html(circ_id).style(
+                                                'font-size: 24pt;')
+                                        with ui.column().classes(
+                                                "items-center"):
                                             ui.label(source_database_print)
 
-                            if output_dict['CSNv1'] and source_database_print != 'CSNv1':
+                            if output_dict[
+                                'CSNv1'] and source_database_print != 'CSNv1':
                                 with ui.column().style('width: 600px;'):
-                                    with ui.card().style('width: 600px;font-size: 12pt;'). \
-                                            classes('column justify-between').\
-                                            style("background-color: #d7e3f4;") as card:
-                                        ui.html(output_dict['CSNv1']).style('font-size: 20pt;')
+                                    with ui.card().style(
+                                            'width: 600px;font-size: 12pt;'). \
+                                            classes('column justify-between'). \
+                                            style(
+                                        "background-color: #d7e3f4;") as card:
+                                        ui.html(output_dict['CSNv1']).style(
+                                            'font-size: 20pt;')
 
                             with ui.column().style('width: 600px;'):
-                                with ui.card().style('width: 600px;font-size: 12pt;'). \
+                                with ui.card().style(
+                                        'width: 600px;font-size: 12pt;'). \
                                         classes('column justify-between'). \
-                                        style("background-color: #d7e3f4;") as card:
+                                        style(
+                                    "background-color: #d7e3f4;") as card:
 
                                     for hit_id in range(0, len(local_columns)):
 
@@ -1068,23 +1119,34 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
                                                                          "Strand",
                                                                          "Stable circhemy database ID"]:
                                             with ui.row():
-                                                with ui.column().style('width: 150px;'):
-                                                    ui.html('<strong>' + local_columns[hit_id] + '</strong>')
+                                                with ui.column().style(
+                                                        'width: 150px;'):
+                                                    ui.html('<strong>' +
+                                                            local_columns[
+                                                                hit_id] + '</strong>')
                                                 with ui.column():
-                                                    ui.html(ui_generate_external_link(local_columns[hit_id], output_dict)).\
-                                                       style('align:center')
+                                                    ui.html(
+                                                        ui_generate_external_link(
+                                                            local_columns[
+                                                                hit_id],
+                                                            output_dict)). \
+                                                        style('align:center')
 
                         with ui.column().style('width: 350px;'):
-                            with ui.card().style('width: 350px;font-size: 12pt;'). \
+                            with ui.card().style(
+                                    'width: 350px;font-size: 12pt;'). \
                                     classes('column justify-between'). \
-                                    style("background-color: #d7e3f4;") as card2:
-
+                                    style(
+                                "background-color: #d7e3f4;") as card2:
                                 output2 = util.get_circrna_history_by_id(util,
-                                                                         circrna_id=output_dict['Stable circhemy database ID'])
+                                                                         circrna_id=
+                                                                         output_dict[
+                                                                             'Stable circhemy database ID'])
 
                                 with ui.row():
                                     with ui.column().style('width: 220px;'):
-                                        ui.html("<strong>" + local_columns[0] + "<strong>")
+                                        ui.html("<strong>" + local_columns[
+                                            0] + "<strong>")
 
                                     with ui.column().style('width: 30px;'):
                                         ui.html(str(output[hit][0]))
@@ -1100,15 +1162,18 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
                                         ui.html('<strong>Date</strong>')
 
                                 for status_id in range(0, len(output2)):
-
-                                    time_code = datetime.utcfromtimestamp(output2[status_id][5]).strftime('%m/%d/%Y')
+                                    time_code = datetime.utcfromtimestamp(
+                                        output2[status_id][5]).strftime(
+                                        '%m/%d/%Y')
 
                                     with ui.row():
                                         with ui.column().style('width: 80px;'):
                                             ui.html(str(output2[status_id][4]))
 
                                         with ui.column().style('width: 80px;'):
-                                            ui.html(str(util.db_action_codes[output2[status_id][1]]))
+                                            ui.html(str(util.db_action_codes[
+                                                            output2[status_id][
+                                                                1]]))
 
                                         with ui.column().style('width: 80px;'):
                                             ui.html(str(time_code))
@@ -1118,8 +1183,10 @@ async def page_application_display_circrna_profile(circ_id: str, client: Client)
     # update page title
     # https://github.com/zauberzeug/nicegui/discussions/830#discussioncomment-5714587
     await client.connected(timeout=5)
-    await ui.run_javascript(f'document.title = "{"Circular RNA "+ circ_id + " - " + util.program_name_long or "nothing"}";',
-                            respond=False)
+    await ui.run_javascript(
+        f'document.title = "{"Circular RNA " + circ_id + " - " + util.program_name_long or "nothing"}";')
+
+
 # content pages
 
 
@@ -1131,7 +1198,8 @@ async def page_about():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html("About "+util.program_name).style('text-align: center; font-size: 26pt;')
+    ui.html("About " + util.program_name).style(
+        'text-align: center; font-size: 26pt;')
 
     with ui.card().style('width: 100%;') as card:
         ui.html("Circular RNAs").style('text-align: center; font-size: 16pt;')
@@ -1196,7 +1264,8 @@ Contact: **<circhemy@jakobilab.org>**
     """)
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
         ui_layout_generate_logo()
 
     ui_layout_add_footer_and_right_drawer()
@@ -1393,7 +1462,8 @@ Grid tables for any other postprocessing:
                         "***[GitHub](https://)***.")
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
         ui_layout_generate_logo()
 
     ui_layout_add_footer_and_right_drawer()
@@ -1404,7 +1474,8 @@ async def page_cli():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html("Command Line Interface (CLI)").style('text-align: center; font-size: 26pt;')
+    ui.html("Command Line Interface (CLI)").style(
+        'text-align: center; font-size: 26pt;')
 
     with ui.card().style('width: 100%;') as card:
         ui.html("Setup").style('text-align: center; font-size: 16pt;')
@@ -1467,8 +1538,8 @@ the rn6 genome build.
                         "***[GitHub](https://)***.")
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
-
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
         ui_layout_generate_logo()
 
     ui_layout_add_footer_and_right_drawer()
@@ -1479,7 +1550,8 @@ async def page_news():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    ui.html("<img style='text-align: center' src=\"static/news_small.png\">").style(
+    ui.html(
+        "<img style='text-align: center' src=\"static/news_small.png\">").style(
         'text-align: center; padding:10px;')
 
     # get feed
@@ -1493,9 +1565,10 @@ async def page_news():
         date_obj = parse(post.updated)
 
         with ui.card().style('width: 100%;') as card:
-            ui.html("<strong>"+date_obj.astimezone(tz.tzlocal()).strftime(
-            "%d %B, %Y")+"</strong>")
-            ui.html(post.title).style('font-size: 1.25rem; line-height: 1.75rem;')
+            ui.html("<strong>" + date_obj.astimezone(tz.tzlocal()).strftime(
+                "%d %B, %Y") + "</strong>")
+            ui.html(post.title).style(
+                'font-size: 1.25rem; line-height: 1.75rem;')
             with ui.card_section():
                 ui.html(post.description)
 
@@ -1504,7 +1577,8 @@ async def page_news():
             break
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4; '):
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
 
         ui_layout_generate_logo()
 
@@ -1513,35 +1587,58 @@ async def page_news():
 
 # error pages for error 404 and 500
 @app.exception_handler(404)
-async def exception_handler_404(request: Request, exception: Exception) -> Response:
+async def exception_handler_404(request: Request,
+                                exception: Exception) -> Response:
     with Client(ui.page('')) as client:
-        with ui.column().style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
-            ui.label('Error 404').style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.html("<strong>Page not found: </strong>" + str(request.url.path)).\
-                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html(str(Request)).style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style('text-align: center; padding:10px;')
-            ui.label('Please contact the server administrator at ' + util.support_email+' for additional support.').\
-                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.link('Click here to report an issue on GitHub.', util.support_web + "?title=circhemy 404 error" +
-                "&body=URL: " + str(request.url) + "%0A%0APlease describe how the error occurred").\
-                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+        with ui.column().style(
+                'width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+            ui.label('Error 404').style(
+                'font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+            ui.html(
+                "<strong>Page not found: </strong>" + str(request.url.path)). \
+                style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html(str(Request)).style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style(
+                'text-align: center; padding:10px;')
+            ui.label(
+                'Please contact the server administrator at ' + util.support_email + ' for additional support.'). \
+                style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.link('Click here to report an issue on GitHub.',
+                    util.support_web + "?title=circhemy 404 error" +
+                    "&body=URL: " + str(
+                        request.url) + "%0A%0APlease describe how the error occurred"). \
+                style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
     return client.build_response(request, 404)
 
 
 @app.exception_handler(500)
-async def exception_handler_500(request: Request, exception: Exception) -> Response:
+async def exception_handler_500(request: Request,
+                                exception: Exception) -> Response:
     with Client(ui.page('')) as client:
-        with ui.column().style('width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
-            ui.label('Internal server error').style('font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.html("<strong>Exception</strong>").style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html(str(exception)).style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style('text-align: center; padding:10px;')
-            ui.label('Please contact the server administrator at ' + util.support_email + ' for additional support.').\
-                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.link('Click here to report an issue on GitHub.', util.support_web + "?title=circhemy exception: " +
-                str(exception) + "&body=URL: " + str(request.url) + "%0A%0APlease describe how the error occurred").\
-                style('font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+        with ui.column().style(
+                'width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+            ui.label('Internal server error').style(
+                'font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+            ui.html("<strong>Exception</strong>").style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html(str(exception)).style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style(
+                'text-align: center; padding:10px;')
+            ui.label(
+                'Please contact the server administrator at ' + util.support_email + ' for additional support.'). \
+                style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+            ui.link('Click here to report an issue on GitHub.',
+                    util.support_web + "?title=circhemy exception: " +
+                    str(exception) + "&body=URL: " + str(
+                        request.url) + "%0A%0APlease describe how the error occurred"). \
+                style(
+                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
     return client.build_response(request, 500)
 
 
@@ -1576,7 +1673,7 @@ class ConvertModel(BaseModel):
         if v not in fields_allowed:
             raise ValueError("Unsupported input field provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed)+
+                             + ', '.join(fields_allowed) +
                              ". Field names are case-sensitive.")
         return v
 
@@ -1588,7 +1685,7 @@ class ConvertModel(BaseModel):
         if v not in fields_allowed:
             raise ValueError("Unsupported input field provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed)+
+                             + ', '.join(fields_allowed) +
                              ". Field names are case-sensitive.")
         return v
 
@@ -1614,7 +1711,7 @@ class ConstraintModel(BaseModel):
         if v not in fields_allowed:
             raise ValueError("Unsupported input field provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed)+
+                             + ', '.join(fields_allowed) +
                              ". Field names are case-sensitive.")
         return v
 
@@ -1626,7 +1723,7 @@ class ConstraintModel(BaseModel):
         if v not in fields_allowed:
             raise ValueError("Unsupported operator1 provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed)+
+                             + ', '.join(fields_allowed) +
                              ". Field names are case-sensitive.")
         return v
 
@@ -1638,7 +1735,7 @@ class ConstraintModel(BaseModel):
         if v not in fields_allowed:
             raise ValueError("Unsupported operator2 provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed)+
+                             + ', '.join(fields_allowed) +
                              ". Field names are case-sensitive.")
         return v
 
