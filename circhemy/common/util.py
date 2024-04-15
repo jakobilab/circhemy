@@ -145,7 +145,8 @@ class Util(object):
                         "Description": "",
                         "Species": "",
                         "Gene": "",
-                        "Stable circhemy database ID": ""
+                        "Stable circhemy database ID": "",
+                        "CircRNA_ID":  "/circrna/"
                         }
 
     db_action_codes = {

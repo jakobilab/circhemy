@@ -397,11 +397,12 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         output_fields = check_if_db_is_selected(ui_convert_form_values)
 
         # we always need these fields for genome browser links
-        output_fields = add_if_not_in_list(output_fields, ["Chr",
+        output_fields = add_if_not_in_list(output_fields, [
+                                                            "CircRNA_ID",
+                                                            "Chr",
                                                            "Start",
                                                            "Stop",
-                                                           "Genome",
-                                                           "circBase"
+                                                           "Genome"
                                                            ])
 
         sql_query = ""
@@ -810,7 +811,7 @@ def ui_query_add_conditions(container, new=False) -> None:
                 label="Database field").style("width: 130px")
 
             query_values['operator2'] = ui.select(["is", "LIKE", ">", "<"],
-                                                  value="is",
+                                                  value="LIKE",
                                                   label="Query operator").style(
                 "width: 130px")
 
@@ -892,6 +893,8 @@ async def page_application_query():
     ui_layout_add_header()
 
     ui_convert_form_values['mode'] = "query"
+
+    ui_convert_form_values['db_checkboxes'] = []
 
     ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
     ui_convert_form_values[
