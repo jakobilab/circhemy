@@ -149,16 +149,23 @@ def check_text_field_input(upload_data) -> str:
 def check_if_db_is_selected(form_values) -> List[Any]:
     checklist = []
 
-    for item in form_values['db_checkboxes']:
-        if item.value is True:
-            checklist.append(item.text)
+    if 'db_checkboxes' in form_values:
+
+        for item in form_values['db_checkboxes']:
+            if item.value is True:
+                checklist.append(item.text)
 
     return checklist
 
 
 def check_query_text_field() -> None:
+
+    print('checking')
+
     if 'submit_query_button' in ui_convert_form_values:
         all_good = True
+
+        print('found button')
 
         for form in ui_query_forms:
             if not form['query'].value:
@@ -393,7 +400,8 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         output_fields = add_if_not_in_list(output_fields, ["Chr",
                                                            "Start",
                                                            "Stop",
-                                                           "Genome"
+                                                           "Genome",
+                                                           "circBase"
                                                            ])
 
         sql_query = ""
@@ -417,6 +425,8 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
             elif form['operator2'].value is "<":
                 sql_query += form['field'].value + " < \"" \
                              + form['query'].value + "\" "
+
+        print(sql_query)
 
         ui_query_forms.clear()
 
@@ -454,7 +464,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 
         # make sure we only call this if called from web,
         # otherwise this field is not initialized
-        if not input_id:
+        if not input_id and ui_convert_form_values['mode'] is "convert":
             processed_output = processed_output + item \
                                + ui_convert_form_values['select2'].value
 
@@ -564,14 +574,19 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         table.classes("ag-theme-balham")
         table.update()
 
-        processed_output = processed_output \
-                           + util.process_sql_output(output,
-                                                     seperator=
-                                                     ui_convert_form_values[
-                                                         'select2'].value,
-                                                     empty_char=
-                                                     ui_convert_form_values[
-                                                         'select3'].value)
+        if ui_convert_form_values['mode'] is "convert":
+
+            processed_output = processed_output \
+                               + util.process_sql_output(output,
+                                                         seperator=
+                                                         ui_convert_form_values[
+                                                             'select2'].value,
+                                                         empty_char=
+                                                         ui_convert_form_values[
+                                                             'select3'].value)
+        else:
+            processed_output = processed_output \
+                               + util.process_sql_output(output)
 
         # web return is the output and the nicegui table object
         return processed_output, table
@@ -906,6 +921,8 @@ async def page_application_query():
 
     ####################
 
+    # ui_convert_form_values['db_checkboxes'] =
+
     ui_layout_add_left_drawer()
 
     ui_layout_add_footer_and_right_drawer()
@@ -1005,6 +1022,8 @@ async def page_application_display_circrna_profile(circ_id: str,
                 tabs.props('align="left"')
 
                 for hit in range(0, len(output)):
+
+                    print( output[hit][18])
 
                     if output[hit][16]:
                         ui.tab(output[hit][17] + ":" + str(
