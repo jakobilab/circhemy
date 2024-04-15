@@ -78,6 +78,7 @@ def main():
     # run main application
     ui.run(title=util.program_name + " " + util.software_version,
            show=False,
+           favicon="http://localhost:8080/favicon/favicon.ico",
            binding_refresh_interval=0.1
            )
 
@@ -160,12 +161,8 @@ def check_if_db_is_selected(form_values) -> List[Any]:
 
 def check_query_text_field() -> None:
 
-    print('checking')
-
     if 'submit_query_button' in ui_convert_form_values:
         all_good = True
-
-        print('found button')
 
         for form in ui_query_forms:
             if not form['query'].value:
@@ -185,9 +182,10 @@ def add_if_not_in_list(input_list=None, item_list=None):
         item_list = []
     if input_list is None:
         input_list = []
-    for item in item_list:
+    for item in item_list[::-1]: # go backwards through list
+        # to insert in correct order
         if item not in input_list:
-            input_list.append(item)
+            input_list.insert(0, item)
 
     return input_list
 
@@ -427,8 +425,6 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                 sql_query += form['field'].value + " < \"" \
                              + form['query'].value + "\" "
 
-        print(sql_query)
-
         ui_query_forms.clear()
 
         output = util.run_keyword_select_query(util,
@@ -447,7 +443,8 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
             'sortable': True,
             'resizable': True,
             'cellStyle': {'textAlign': 'left'},
-            'headerClass': 'font-bold'
+            'headerClass': 'font-bold',
+            ':onGridReady': '(params) => params.columnApi.autoSizeAllColumns()'
         },
 
             'columnDefs': [],
@@ -538,6 +535,13 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                         + " target=\"_blank\">" \
                                         + str(item[0]) + "</a>"
 
+                elif item[1] == "CircRNA_ID" and not input_id:
+
+                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
+                                "\" href=\"" + util.external_db_urls["CircRNA_ID"] \
+                                + str(item[0]) + "\" target=\"_blank\">" \
+                                + "CircRNA details in circhemy" + "</a>"
+
                 elif item[0] is not None \
                         and util.external_db_urls[item[1]] \
                         and not input_id:
@@ -572,6 +576,8 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         #             "margin-right:auto; ")
         table.style(add='height: calc(100vh - 220px)')
         table.props("domLayout='autoHeight'")
+        table.on('firstDataRendered',
+                 lambda: table.run_column_method('autoSizeAllColumns'))
         table.classes("ag-theme-balham")
         table.update()
 
@@ -710,8 +716,66 @@ def ui_layout_add_left_drawer(convert=False) -> None:
                                                                         "fields") \
                         .style("width: 320px")
 
+            else:
+                with ui.column().classes('q-py-none').classes('q-my-none'):
+                    ui.label('Select output fields:').style(
+                        "text-decoration: underline;")
+
+                    # ui.label("Genomic Coordinates")
+                    # with ui.row():
+                    #     tmp = [ui.checkbox('Chr', value=True),
+                    #            ui.checkbox('Start', value=True),
+                    #            ui.checkbox('Stop', value=True)]
+
+                    db_entries = []
+                    ui.label("CircRNA databases & external IDs")
+
+                    with ui.row().classes('q-py-none'):
+                        with ui.column():
+                            for item in range(
+                                    int(len(util.select_db_columns) / 3)):
+                                db_entries.append(
+                                    ui.checkbox(util.select_db_columns[item],
+                                                value=util.active_db_columns[
+                                                    util.select_db_columns[
+                                                        item]]).props(
+                                        'size=xs'))
+
+                        with ui.column():
+                            for item in range(
+                                    int(len(util.select_db_columns) / 3),
+                                    int((len(util.select_db_columns) / 3) * 2)):
+                                db_entries.append(
+                                    ui.checkbox(util.select_db_columns[item],
+                                                value=util.active_db_columns[
+                                                    util.select_db_columns[
+                                                        item]]).props(
+                                        'size=xs'))
+
+                        with ui.column():
+                            for item in range(
+                                    int((len(util.select_db_columns) / 3) * 2),
+                                    len(util.select_db_columns)):
+                                db_entries.append(
+                                    ui.checkbox(util.select_db_columns[item],
+                                                value=util.active_db_columns[
+                                                    util.select_db_columns[
+                                                        item]]).props(
+                                        'size=xs'))
+
+                    checkbox_list = db_entries
+                    ui_convert_form_values['db_checkboxes'] = checkbox_list
+
 
 def ui_layout_add_head_html() -> None:
+    ui.add_head_html('''
+    <meta
+      name="description"
+      content="circhemy is an easy-to-use, web interface, web service, and 
+      command line tool that help researchers to easily convert between
+      different ID formats of circular RNAs (circRNAs)."
+    />
+    ''')
     ui.add_head_html(
         (Path(__file__).parent / 'static' / 'header.html').read_text())
     ui.add_head_html(
@@ -722,15 +786,20 @@ def ui_layout_add_head_html() -> None:
 
 def ui_layout_generate_logo() -> None:
     # program name as link
-    ui.html(util.program_name).style(
-        'text-align: center; font-size: 22pt;').style("width: 320px").classes(
-        'q-py-none')
+    # ui.html(util.program_name).style(
+    #     'text-align: center; font-size: 22pt;').style("width: 320px").classes(
+    #     'q-py-none')
 
-    ui.html("<img src='/static/logo_small.png'/>").style(
-        "width: 320px").classes('q-py-none').classes('q-px-xl')
+    # ui.html("<img  class=\"center\" src='/static/logo_small.png' width='100px'/>").style(
+    #     "width: 340px").classes('q-py-none')
+
+    ui.image('/static/logo_small_2.png').classes('w-[320px]').tooltip("al·che·my - noun - The medieval forerunner of chemistry, "
+            "based on the supposed transformation of matter. "
+            "\"A seemingly magical process of transformation, "
+            "creation, or combination.\"")
 
     # subtitle
-    ui.html("The alchemy of<br/>circular RNA ID conversion"). \
+    ui.html("<i>circhemy</i> - the alchemy of<br/>circular RNA ID conversion"). \
         tooltip('...are shown on mouse over').style(
         'text-align: center; font-size: 16pt;').style("width: 320px").classes(
         'q-py-none')
@@ -772,16 +841,16 @@ def ui_layout_add_footer_and_right_drawer() -> None:
 
         chart = ui.highchart(ui_convert_form_values['chart']).classes(
             'w-full h-64') \
-            .style("height: 350px")
+            .style("height: 330px")
 
         ui.label('Database by CircRNA ID')
         chart2 = ui.highchart(ui_convert_form_values['chart2']).classes(
             'w-full h-64') \
-            .style("height: 350px")
+            .style("height: 330px")
 
     with ui.footer().style('background-color: #3874c8').style(
             "height: 30px").classes('q-pa-xs'):
-        ui.label(" software version " +
+        ui.label(" circhemy version " +
                  util.software_version + " | database version " +
                  util.database_version)
         ui.link('| Jakobi Lab @ GitHub ', 'https://github.com/jakobilab/')
@@ -850,7 +919,7 @@ track of known circRNAs and their identifiers.
         placeholder='start typing',
         on_change=lambda e: ui_convert_form_values['submit_button'].
         set_text(check_text_field_input(upload_data=None))). \
-        props('type=textarea rows=20').style(
+        props('type=textarea rows=18').style(
         "width: 100%; background-color: #ffffff;").classes('q-pa-md')
 
     ui_convert_form_values['or'] = ui.label('- OR -')
@@ -892,8 +961,11 @@ async def page_application_query():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
+    ui_convert_form_values.clear()
+
     ui_convert_form_values['mode'] = "query"
 
+    ui_convert_form_values['db_checkboxes'] = []
     ui_convert_form_values['db_checkboxes'] = []
 
     ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
@@ -1026,16 +1098,14 @@ async def page_application_display_circrna_profile(circ_id: str,
 
                 for hit in range(0, len(output)):
 
-                    print( output[hit][18])
-
                     if output[hit][16]:
-                        ui.tab(output[hit][17] + ":" + str(
+                        ui.tab(str(output[hit][17]) + ":" + str(
                             output[hit][18]) + "-" + str(
                             output[hit][19]) + " [" + output[hit][21] + "]",
                                icon='change_circle').style(
                             "justify-content: initial; background-color: #d7e3f4; ")
                     else:
-                        ui.tab(output[hit][17] + ":" + str(
+                        ui.tab(str(output[hit][17]) + ":" + str(
                             output[hit][18]) + "-" + str(
                             output[hit][19]) + " [" + output[hit][21] + "]",
                                icon='donut_large').style(

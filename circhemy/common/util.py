@@ -345,7 +345,7 @@ class Util(object):
         # build SQL string
         sql = "SELECT " + sql_output_field_list +\
               " FROM " + self.database_table_name + \
-              " WHERE " + keyword_sql + ";"
+              " WHERE " + keyword_sql + " LIMIT 1000;"
 
         sql_output = self.db_cursor.execute(sql).fetchall()
 
