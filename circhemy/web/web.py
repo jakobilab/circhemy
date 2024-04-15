@@ -1573,7 +1573,7 @@ async def page_cli():
         ui.html("Setup").style('text-align: center; font-size: 16pt;')
         with ui.card_section():
             ui.markdown("""
-The circhemy package is written in Python3 (>=3.7) and consists of two 
+The circhemy package is written in Python3 (>=3.8) and consists of two 
 core modules, namely convert and query. The command line version requires 
 only one external dependency, ``sqlite3``, for access to the internal SQLite3
 database with circRNA ID data
@@ -1589,9 +1589,9 @@ any other distribution.
 
 The installation requires running python on the command line:
 
-    git clone https://github.com/dieterich-lab/circtools.git
-    cd circtools
-    python3 setup.py install --verbose --user
+    git clone https://github.com/jakobilab/circhemy.git
+    cd circhemy
+    pip3 install .
 """)
 
     with ui.card().style('width: 100%;') as card:
