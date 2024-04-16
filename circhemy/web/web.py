@@ -161,12 +161,20 @@ def check_if_db_is_selected(form_values) -> List[Any]:
 
 def check_query_text_field() -> None:
 
+    print('entering fcn')
+
     if 'submit_query_button' in ui_convert_form_values:
         all_good = True
+        print('got submit button')
 
         for form in ui_query_forms:
+            print(form['query'])
+            print(form['query'].value)
+
             if not form['query'].value:
                 all_good = False
+            else:
+                all_good = True
 
         if all_good:
             ui_convert_form_values['submit_query_button'].props(
@@ -1696,48 +1704,53 @@ async def exception_handler_404(request: Request,
                                 exception: Exception) -> Response:
     with Client(ui.page('')) as client:
         with ui.column().style(
-                'width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+                'width: 100%;align-items: center; gap: 0'):
             ui.label('Error 404').style(
-                'font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
+                'font-size: 2.75rem; line-height: 1;')
             ui.html(
                 "<strong>Page not found: </strong>" + str(request.url.path)). \
                 style(
                 'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
             ui.html(str(Request)).style(
-                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+                'font-size: 1.25rem; line-height: 1.75rem;')
             ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style(
                 'text-align: center; padding:10px;')
             ui.label(
                 'Please contact the server administrator at ' + util.support_email + ' for additional support.'). \
                 style(
-                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+                'font-size: 1.25rem; line-height: 1.75rem;')
             ui.link('Click here to report an issue on GitHub.',
                     util.support_web + "?title=circhemy 404 error" +
                     "&body=URL: " + str(
                         request.url) + "%0A%0APlease describe how the error occurred"). \
                 style(
-                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+                'font-size: 1.25rem; line-height: 1.75rem;')
     return client.build_response(request, 404)
 
 
 @app.exception_handler(500)
 async def exception_handler_500(request: Request,
                                 exception: Exception) -> Response:
+    import traceback
+
     with Client(ui.page('')) as client:
         with ui.column().style(
-                'width: 100%; padding: 5rem 0; align-items: center; gap: 0'):
+                'width: 100%;align-items: center; gap: 0'):
             ui.label('Internal server error').style(
-                'font-size: 3.75rem; line-height: 1; padding: 1.25rem 0')
-            ui.html("<strong>Exception</strong>").style(
+                'font-size: 2.75rem; line-height: 1;')
+            ui.html(
+                "<strong>Exception:</strong>"). \
+                style(
                 'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
             ui.html(str(exception)).style(
-                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+                'font-size: 1.25rem; line-height: 1.75rem;')
             ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style(
                 'text-align: center; padding:10px;')
             ui.label(
-                'Please contact the server administrator at ' + util.support_email + ' for additional support.'). \
+                'Please contact the server administrator at '
+                + util.support_email + ' for additional support.'). \
                 style(
-                'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
+                'font-size: 1.25rem; line-height: 1.75rem;')
             ui.link('Click here to report an issue on GitHub.',
                     util.support_web + "?title=circhemy exception: " +
                     str(exception) + "&body=URL: " + str(
