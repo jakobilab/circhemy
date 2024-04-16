@@ -161,15 +161,10 @@ def check_if_db_is_selected(form_values) -> List[Any]:
 
 def check_query_text_field() -> None:
 
-    print('entering fcn')
-
     if 'submit_query_button' in ui_convert_form_values:
         all_good = True
-        print('got submit button')
 
         for form in ui_query_forms:
-            print(form['query'])
-            print(form['query'].value)
 
             if not form['query'].value:
                 all_good = False
@@ -971,11 +966,12 @@ async def page_application_query():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
+    # clear out forms for before form load
     ui_convert_form_values.clear()
+    ui_query_forms.clear()
 
     ui_convert_form_values['mode'] = "query"
 
-    ui_convert_form_values['db_checkboxes'] = []
     ui_convert_form_values['db_checkboxes'] = []
 
     ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
