@@ -248,7 +248,7 @@ def ui_generate_external_link(external_site: str, values: dict):
                     values['Genome'] + ".bed\"" \
                     + " target=\"_blank\">[view exons in Genome Browser]</a>"
 
-    elif external_site == "Species" or external_site == "Gene":
+    elif external_site == "Species" or external_site == "Gene" and values[external_site]:
 
         returnval = "<i>" + values[external_site].replace("_", " ") + "</i>"
 
