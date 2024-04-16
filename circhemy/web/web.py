@@ -366,7 +366,9 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         output_fields = check_if_db_is_selected(ui_convert_form_values)
 
         # we always need these fields for genome browser links
-        output_fields = add_if_not_in_list(output_fields, ["Chr",
+        output_fields = add_if_not_in_list(output_fields, [
+                                                            "CircRNA_ID",
+                                                            "Chr",
                                                            "Start",
                                                            "Stop",
                                                            "Genome"
@@ -540,7 +542,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                     tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
                                 "\" href=\"" + util.external_db_urls["CircRNA_ID"] \
                                 + str(item[0]) + "\" target=\"_blank\">" \
-                                + "CircRNA details in circhemy" + "</a>"
+                                + "Circhemy profile" + "</a>"
 
                 elif item[0] is not None \
                         and util.external_db_urls[item[1]] \
@@ -1141,7 +1143,7 @@ async def page_application_display_circrna_profile(circ_id: str,
             output[0][19]) + " [" + output[0][21] + "]"
 
         with ui.tab_panels(tabs, value=first_tab).style(
-                "background-color: #f8f8f8;"):
+                "background-color: #f8f8f8;").classes('q-ma-none'):
 
             # for each circRNA hit, e.g. different circRNAs or different genomes
             for hit in range(0, len(output)):
@@ -1172,12 +1174,12 @@ async def page_application_display_circrna_profile(circ_id: str,
 
                     with ui.row():
                         with ui.column():
-                            with ui.column().style('width: 600px;'):
+                            with ui.column().style('width: 700px;'):
                                 with ui.card().style(
-                                        'width: 600px;font-size: 12pt;'). \
+                                        'width: 700px;font-size: 12pt;'). \
                                         classes('column justify-between').style(
                                     "background-color: #d7e3f4;") as card:
-                                    with ui.row():
+                                    with ui.row().style('height: 34px;'):
                                         with ui.column():
                                             ui.html(circ_id).style(
                                                 'font-size: 24pt;')
@@ -1187,18 +1189,26 @@ async def page_application_display_circrna_profile(circ_id: str,
 
                             if output_dict[
                                 'CSNv1'] and source_database_print != 'CSNv1':
-                                with ui.column().style('width: 600px;'):
+                                with ui.column().style('width: 700px;'):
                                     with ui.card().style(
-                                            'width: 600px;font-size: 12pt;'). \
+                                            'width: 700px;font-size: 12pt;'). \
                                             classes('column justify-between'). \
                                             style(
                                         "background-color: #d7e3f4;") as card:
-                                        ui.html(output_dict['CSNv1']).style(
-                                            'font-size: 20pt;')
+                                        # ui.html(output_dict['CSNv1']).style(
+                                        #     'font-size: 20pt;')
+                                        with ui.row().style('height: 30px;').classes('q-pa-none'):
+                                            with ui.column():
+                                                ui.html(output_dict['CSNv1']).style(
+                                                    'font-size: 20pt;')
+                                            with ui.column().classes(
+                                                    "items-center"):
+                                                ui.label('CSNv1')
 
-                            with ui.column().style('width: 600px;'):
+
+                            with ui.column().style('width: 700px;'):
                                 with ui.card().style(
-                                        'width: 600px;font-size: 12pt;'). \
+                                        'width: 700px;font-size: 12pt;'). \
                                         classes('column justify-between'). \
                                         style(
                                     "background-color: #d7e3f4;") as card:
@@ -1210,19 +1220,21 @@ async def page_application_display_circrna_profile(circ_id: str,
                                                                          "Stop",
                                                                          "Strand",
                                                                          "Stable circhemy database ID"]:
-                                            with ui.row():
+
+
+                                            with ui.row().style('height: 15px;'):
                                                 with ui.column().style(
                                                         'width: 150px;'):
                                                     ui.html('<strong>' +
                                                             local_columns[
-                                                                hit_id] + '</strong>')
+                                                                hit_id] + '</strong>').classes('q-pa-none')
                                                 with ui.column():
                                                     ui.html(
                                                         ui_generate_external_link(
                                                             local_columns[
                                                                 hit_id],
                                                             output_dict)). \
-                                                        style('align:center')
+                                                        style('align:center').classes('q-pa-none')
 
                         with ui.column().style('width: 350px;'):
                             with ui.card().style(
@@ -1234,41 +1246,42 @@ async def page_application_display_circrna_profile(circ_id: str,
                                                                          circrna_id=
                                                                          output_dict[
                                                                              'Stable circhemy database ID'])
+                                with ui.column().style('width: 350px'):
 
-                                with ui.row():
-                                    with ui.column().style('width: 220px;'):
-                                        ui.html("<strong>" + local_columns[
-                                            0] + "<strong>")
+                                    with ui.row():
+                                        with ui.column().style('width: 220px;'):
+                                            ui.html("<strong>" + local_columns[
+                                                0] + "<strong>")
 
-                                    with ui.column().style('width: 30px;'):
-                                        ui.html(str(output[hit][0]))
-
-                                with ui.row():
-                                    with ui.column().style('width: 80px;'):
-                                        ui.html('<strong>DB Version</strong>')
-
-                                    with ui.column().style('width: 80px;'):
-                                        ui.html('<strong>Status</strong>')
-
-                                    with ui.column().style('width: 80px;'):
-                                        ui.html('<strong>Date</strong>')
-
-                                for status_id in range(0, len(output2)):
-                                    time_code = datetime.utcfromtimestamp(
-                                        output2[status_id][5]).strftime(
-                                        '%m/%d/%Y')
+                                        with ui.column().style('width: 30px;'):
+                                            ui.html(str(output[hit][0]))
 
                                     with ui.row():
                                         with ui.column().style('width: 80px;'):
-                                            ui.html(str(output2[status_id][4]))
+                                            ui.html('<strong>DB Version</strong>')
 
                                         with ui.column().style('width: 80px;'):
-                                            ui.html(str(util.db_action_codes[
-                                                            output2[status_id][
-                                                                1]]))
+                                            ui.html('<strong>Status</strong>')
 
                                         with ui.column().style('width: 80px;'):
-                                            ui.html(str(time_code))
+                                            ui.html('<strong>Date</strong>')
+
+                                    for status_id in range(0, len(output2)):
+                                        time_code = datetime.utcfromtimestamp(
+                                            output2[status_id][5]).strftime(
+                                            '%m/%d/%Y')
+
+                                        with ui.row():
+                                            with ui.column().style('width: 80px;'):
+                                                ui.html(str(output2[status_id][4]))
+
+                                            with ui.column().style('width: 80px;'):
+                                                ui.html(str(util.db_action_codes[
+                                                                output2[status_id][
+                                                                    1]]))
+
+                                            with ui.column().style('width: 80px;'):
+                                                ui.html(str(time_code))
 
     ui_layout_add_footer_and_right_drawer()
 
