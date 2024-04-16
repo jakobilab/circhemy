@@ -277,7 +277,6 @@ class Util(object):
                   "is being unpacked for the first use.")
             print("You should only see this message once.")
             os.system("bunzip2 " + database+".bz2")
-            os.system("rm " + database+".bz2")
             print("Done.")
             # test and write note
 
