@@ -8,10 +8,10 @@ on:
  pull_request:
 
 # on new tag / before release
-on:
-  push:
-    tags:
-      - '*'
+# on:
+#   push:
+#     tags:
+#       - '*'
 
 jobs:
   # define job to build and publish docker image
