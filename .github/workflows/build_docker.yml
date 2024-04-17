@@ -4,18 +4,15 @@ on:
  # run it on push to the default repository branch
  push:
    branches: [main]
- # run it during pull request
+   tags:
+     - '*'
+
  pull_request:
 
-# on new tag / before release
-# on:
-#   push:
-#     tags:
-#       - '*'
 
 jobs:
   build-and-push-docker-image:
-    name: Build Docker image and push to repositories
+    name: Build Docker image and push to repositoriy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -34,7 +31,7 @@ jobs:
         with:
           context: ./docker/
           tags: |
-            ghcr.io/jakobilab/circhemy/circhemy:latest
+            ghcr.io/jakobilab/circhemy/circhemy:main
           push: ${{ github.ref == 'refs/heads/master' }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
