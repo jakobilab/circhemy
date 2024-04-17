@@ -55,7 +55,7 @@ million circRNAs of Human, mouse, and rat.
 Installation
 -------------
 
-The circhemy CLI package is written in Python3 (>=3.7) and consists of two
+The circhemy CLI package is written in Python3 (>=3.8) and consists of two
 core modules, namely ``convert`` and ``query``. The command line version requires
 only one external dependency, ``sqlite3``, for access to the internal SQLite3
 database with circRNA ID data
