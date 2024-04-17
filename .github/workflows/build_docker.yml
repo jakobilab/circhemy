@@ -32,6 +32,6 @@ jobs:
           context: ./docker/
           tags: |
             ghcr.io/jakobilab/circhemy/circhemy:main
-          push: ${{ github.ref == 'refs/heads/master' }}
+          push: ${{ github.ref == 'refs/heads/main' }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
