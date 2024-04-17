@@ -25,7 +25,7 @@ RUN apt-get update; DEBIAN_FRONTEND=noninteractive TZ=America/Phoenix apt-get in
 # install circhemy
 # unpack database (as the container is immutable)
 
-RUN git config --global url."https://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:@github.com/".insteadOf "https://github.com/"
+RUN git config --global url."https://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@github.com/".insteadOf "https://github.com/"
 
 RUN git clone https://github.com/jakobilab/circhemy.git ; ls -la circhemy/;
 
