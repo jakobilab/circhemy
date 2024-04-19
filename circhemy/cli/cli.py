@@ -324,19 +324,19 @@ def main():
         # setup db, get cursor
         util.setup_database(util, util.database_location)
 
-        input_dict = dict(circbase=args.circbase_query,
-                          circatlas=args.circatlas_query,
-                          deepbase2=args.deepbase2_query,
-                          circpedia2=args.circpedia2_query,
-                          circbank=args.circbank_query,
-                          arraystar=args.arraystar_query,
-                          circrnadb=args.circrnadb_query,
-                          species=args.species_query,
-                          genome=args.genome_query,
-                          chr=args.chr_query,
-                          start=args.start_query,
-                          stop=args.stop_query,
-                          gene=args.gene_query
+        input_dict = dict(circNase=args.circbase_query,
+                          CircAtlas2=args.circatlas_query,
+                          deepBase2=args.deepbase2_query,
+                          Circpedia2=args.circpedia2_query,
+                          circBank=args.circbank_query,
+                          Arraystar=args.arraystar_query,
+                          circRNADb=args.circrnadb_query,
+                          Species=args.species_query,
+                          Genome=args.genome_query,
+                          Chr=args.chr_query,
+                          Start=args.start_query,
+                          Stop=args.stop_query,
+                          Gene=args.gene_query
                           )
 
         # print(input_dict)
