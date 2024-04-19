@@ -19,19 +19,19 @@ jobs:
         uses: actions/checkout@v3
       - name: Set up docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Login to GitHub packages
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build image and push GitHub container registry
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./docker/
           tags: |
-            ghcr.io/jakobilab/circhemy/circhemy-cli:main
+            ghcr.io/jakobilab/circhemy/circhemy:main
           push: ${{ github.ref == 'refs/heads/main' }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
