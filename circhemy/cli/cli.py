@@ -392,7 +392,9 @@ def main():
         # close db connection
         util.db_connection.close()
 
+    elif args.command == "download":
+        util.setup_database(util, util.database_location, from_cli=True)
+
     else:
         print("Unknown command:", args.command)
         exit(-1)
-

@@ -270,7 +270,7 @@ class Util(object):
 
         return chart_dict, dbsize, chart2_dict
 
-    def setup_database(self, database):
+    def setup_database(self, database, from_cli=False):
 
         # check if there is a .bz2 version of the database
         # if yes, this is the first time circhemy runs
@@ -323,6 +323,9 @@ class Util(object):
                       "https://github.com/jakobilab/circhemy/issues/new")
                 exit(-1)
 
+        if os.path.isfile(database) and from_cli:
+            print("Database already downloaded.")
+
         self.db_connection = sqlite3.connect(database)
 
         # SQLite optimizations from
@@ -340,6 +343,8 @@ class Util(object):
 
         # getting db cursor
         self.db_cursor = self.db_connection.cursor()
+
+
 
     @staticmethod
     def process_sql_output(sql_output, seperator="\t", empty_char="NA"):
