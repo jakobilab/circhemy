@@ -1,6 +1,14 @@
 include pyproject.toml
 
+# data for web deployment
 include circhemy/web/*
 include circhemy/web/static/*
 include circhemy/web/fonts/*
 include circhemy/web/favicon/*
+
+# test data for CI
+# for query mode
+include circhemy/data/circhemy_query.results
+
+# for convert mode
+include circhemy/data/circhemy_convert.results
