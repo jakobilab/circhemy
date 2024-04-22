@@ -92,11 +92,11 @@ Convert module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The convert module is able to convert from a range of input circRNA ID into different one or more database identifiers.
 
-Example: Convert a list of CircAtlas2 IDs read via STDIN from file input.csv into circPedia2 IDs, but also output  CircAtlas2 IDs, while writing the output to /tmp/output.csv:
+Example: Convert a list of CircAtlas2 IDs read via STDIN from file input.csv into Circpedia2 IDs, but also output  CircAtlas2 IDs, while writing the output to /tmp/output.csv:
 
 .. code-block:: console
 
-    cat input.csv | circhemy convert -q STDIN -i CircAtlas2 -o circpedia2 CircAtlas2 -O /tmp/output.csv
+    cat input.csv | circhemy convert -q STDIN -i CircAtlas2 -o Circpedia2 CircAtlas2 -O /tmp/output.csv
 
 Query module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,7 +127,7 @@ The convert module is able to convert from a range of input circRNA ID into
 different one or more database identifiers.
 
 Example: Convert a list of CircAtlas2 IDs into circBase and
-into CircPedia2 IDs, including the Genome build.
+into Circpedia2 IDs, including the Genome build.
 
 .. code-block:: console
 
@@ -136,7 +136,7 @@ into CircPedia2 IDs, including the Genome build.
       -H 'Content-Type: application/json'
       -d '{
           "input": "CircAtlas2",
-          "output": ["CircPedia2","CircAtlas2","Genome"],
+          "output": ["Circpedia2","CircAtlas2","Genome"],
           "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
           }'
 
