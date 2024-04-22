@@ -1568,7 +1568,7 @@ Grid tables for any other postprocessing:
         ui.html("Documentation").style('text-align: center; font-size: 16pt;')
         with ui.card_section():
             ui.markdown("The full documentation is available on "
-                        "***[GitHub](https://)***.")
+                        "***[GitHub](https://github.com/jakobilab/circhemy)***.")
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4;').props('width=390').classes(
