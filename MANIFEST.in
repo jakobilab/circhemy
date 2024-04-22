@@ -1,20 +1,6 @@
 include pyproject.toml
 
-# Include the README
-include *.md
-
-# Include the license file
-include LICENSE.txt
-
-# Include setup.py
-include setup.py
-
-# Include the data files
-recursive-include circhemy/web *
-
-# Include database file
-include circhemy/data/circhemy.sqlite3.bz2
-
-# Include test output for validation
-include circhemy/data/circhemy_query.results
-include circhemy/data/circhemy_convert.results
+include circhemy/web/*
+include circhemy/web/static/*
+include circhemy/web/fonts/*
+include circhemy/web/favicon/*
