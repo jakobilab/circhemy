@@ -37,6 +37,10 @@ class Util(object):
 
     database_location = circhemy.__path__[0]+"/data/circhemy.sqlite3"
 
+    database_url = "https://links.jakobilab.org/circhemy.sqlite3.gz"
+
+    database_md5 = "https://links.jakobilab.org/circhemy.sqlite3.gz.md5"
+
     database_table_name = "circhemy"
 
     database_species_list = ["homo_sapiens",
@@ -272,13 +276,52 @@ class Util(object):
         # if yes, this is the first time circhemy runs
         # we have to unpack it one time
 
-        if os.path.isfile(database+".bz2"):
-            print("This is the first run of circhemy, local SQLite3 database "
-                  "is being unpacked for the first use.")
+        if not os.path.isfile(database):
+            print("This is the first run of circhemy.")
+
             print("You should only see this message once.")
-            os.system("bunzip2 " + database+".bz2")
-            print("Done.")
-            # test and write note
+
+            # for downloads
+            from urllib import request
+
+            # for md5 checksums
+            import hashlib
+
+            db_url = self.database_url
+            md5_url = self.database_md5
+
+            database_gzip = database+".gz"
+            database_remote_md5 = database+".md5"
+
+            request.urlretrieve(md5_url, database_remote_md5)
+            request.urlretrieve(db_url, database_gzip)
+
+            # open md5 file to get hash
+            with open(database_remote_md5) as f:
+                line = f.readline()
+
+            # we only need the md5 checksum
+            remote_md5 = line.strip().split()[0]
+
+            # get md5 local hash
+            hash_md5 = hashlib.md5()
+            hash_md5.update(open(database_gzip, 'rb').read())
+            db_md5 = hash_md5.hexdigest()
+
+            print("SQLite3 database and checksum file downloaded,"
+                  " checking integrity.")
+
+            if db_md5 == remote_md5:
+                print("Integrity check okay, unpacking.")
+                os.system("gzip -d " + database+".gz")
+                print("Database installation finished.")
+                # test and write note
+            else:
+                print("Integrity check failed, "
+                      "please try running the setup again.")
+                print("Should the error persist please open an issue at "
+                      "https://github.com/jakobilab/circhemy/issues/new")
+                exit(-1)
 
         self.db_connection = sqlite3.connect(database)
 
