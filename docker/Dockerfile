@@ -29,7 +29,7 @@ RUN git config --global url."https://github_pat_11AAKSCYA0qAYszMZIvGYf_MEaRsrboH
 
 RUN git clone https://github.com/jakobilab/circhemy.git ; ls -la circhemy/;
 
-RUN wget https://bootstrap.pypa.io/get-pip.py; python3 get-pip.py; rm get-pip.py; python3 -m pip install -U setuptools; python3 -m pip install circhemy/; pip cache purge; apt-get purge python3-dev; apt-get autoremove; apt-get autoclean; rm -rf /var/lib/apt/lists/*; rm circhemy/ -rf; bunzip2 /usr/local/lib/python3.10/dist-packages/circhemy/data/circhemy.sqlite3.bz2;
+RUN wget https://bootstrap.pypa.io/get-pip.py; python3 get-pip.py; rm get-pip.py; python3 -m pip install -U setuptools; python3 -m pip install circhemy/; pip cache purge; apt-get purge python3-dev; apt-get autoremove; apt-get autoclean; rm -rf /var/lib/apt/lists/*; rm circhemy/ -rf; circhemy download;
 
 USER circhemy
 
