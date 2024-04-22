@@ -92,21 +92,21 @@ Convert module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The convert module is able to convert from a range of input circRNA ID into different one or more database identifiers.
 
-Example: Convert a list of CircAtlas IDs read via STDIN from file input.csv into circPedia2 IDs, but also output  CircAtlas IDs, while writing the output to /tmp/output.csv:
+Example: Convert a list of CircAtlas2 IDs read via STDIN from file input.csv into circPedia2 IDs, but also output  CircAtlas2 IDs, while writing the output to /tmp/output.csv:
 
 .. code-block:: console
 
-    cat input.csv | circhemy convert -q STDIN -i circatlas -o circpedia2 circatlas -O /tmp/output.csv
+    cat input.csv | circhemy convert -q STDIN -i CircAtlas2 -o circpedia2 CircAtlas2 -O /tmp/output.csv
 
 Query module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The query module is able to retrieve circRNA IDs from the internal database that fulfil a set of user-defined constraints.
 
-Example: Retrieve a list of circbase and circatlas circRNA IDs that are located on chromosome 3 of the species rattus norvegicus; only print out circRNAs from the rn6 genome build.
+Example: Retrieve a list of circbase and CircAtlas2 circRNA IDs that are located on chromosome 3 of the species rattus norvegicus; only print out circRNAs from the rn6 genome build.
 
 .. code-block:: console
 
-    circhemy query -o circbase circatlas -C chr3 -s rattus_norvegicus -g rn6
+    circhemy query -o circbase CircAtlas2 -C chr3 -s rattus_norvegicus -g rn6
 
 
 Representational State Transfer Interface (REST)
@@ -126,7 +126,7 @@ Convert module
 The convert module is able to convert from a range of input circRNA ID into
 different one or more database identifiers.
 
-Example: Convert a list of CircAtlas IDs into circBase and
+Example: Convert a list of CircAtlas2 IDs into circBase and
 into CircPedia2 IDs, including the Genome build.
 
 .. code-block:: console
@@ -135,8 +135,8 @@ into CircPedia2 IDs, including the Genome build.
       -H 'accept: application/json'
       -H 'Content-Type: application/json'
       -d '{
-          "input": "CircAtlas",
-          "output": ["CircPedia2","CircAtlas","Genome"],
+          "input": "CircAtlas2",
+          "output": ["CircPedia2","CircAtlas2","Genome"],
           "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
           }'
 
@@ -180,8 +180,8 @@ Query module
 The query module is able to retrieve circRNA IDs from the internal database that
 fulfil a set of user-defined constraints.
 
-Example: Retrieve all circRNAs with a CircAtlas ID containing *nppa* in the
-species homo sapiens, return the IDs in circBase and circAtlas format:
+Example: Retrieve all circRNAs with a CircAtlas2 ID containing *nppa* in the
+species homo sapiens, return the IDs in circBase and CircAtlas2 format:
 
 .. code-block:: console
 
@@ -193,7 +193,7 @@ species homo sapiens, return the IDs in circBase and circAtlas format:
                       "input": [
                         {
                           "query": "nppa",
-                          "field": "CircAtlas",
+                          "field": "CircAtlas2",
                           "operator1": "AND",
                           "operator2": "LIKE"
                         },
@@ -206,7 +206,7 @@ species homo sapiens, return the IDs in circBase and circAtlas format:
                       ],
                       "output": [
                         "circBase",
-                        "CircAtlas"
+                        "CircAtlas2"
                       ]
                     }'
 
@@ -222,69 +222,69 @@ Grid tables for any other postprocessing:
           "field": "circBase"
         },
         {
-          "headerName": "CircAtlas",
-          "field": "CircAtlas"
+          "headerName": "CircAtlas2",
+          "field": "CircAtlas2"
         }
       ],
       "rowData": [
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA_0001"
+          "CircAtlas2": "hsa-NPPA_0001"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA_0002"
+          "CircAtlas2": "hsa-NPPA_0002"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA-AS1_0001"
+          "CircAtlas2": "hsa-NPPA-AS1_0001"
         },
         {
           "circBase": "hsa_circ_0009871",
-          "CircAtlas": "hsa-NPPA-AS1_0004"
+          "CircAtlas2": "hsa-NPPA-AS1_0004"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA-AS1_0002"
+          "CircAtlas2": "hsa-NPPA-AS1_0002"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA-AS1_0003"
+          "CircAtlas2": "hsa-NPPA-AS1_0003"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA_0001"
+          "CircAtlas2": "hsa-NPPA_0001"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA_0002"
+          "CircAtlas2": "hsa-NPPA_0002"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA-AS1_0001"
+          "CircAtlas2": "hsa-NPPA-AS1_0001"
         },
         {
           "circBase": "hsa_circ_0009871",
-          "CircAtlas": "hsa-NPPA-AS1_0004"
+          "CircAtlas2": "hsa-NPPA-AS1_0004"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA-AS1_0002"
+          "CircAtlas2": "hsa-NPPA-AS1_0002"
         },
         {
           "circBase": "",
-          "CircAtlas": "hsa-NPPA-AS1_0003"
+          "CircAtlas2": "hsa-NPPA-AS1_0003"
         }
       ]
     }
 
 
-.. |downloads| image:: https://pepy.tech/badge/circtools
+.. |downloads| image:: https://pepy.tech/badge/circhemy
     :alt: Python Package Index Downloads
     :scale: 100%
     :target: https://pepy.tech/project/circhemy
 
-.. |pypi| image:: https://badge.fury.io/py/circtools.svg
+.. |pypi| image:: https://badge.fury.io/py/circhemy.svg
     :alt: Python package version
     :scale: 100%
     :target: https://badge.fury.io/py/circhemy

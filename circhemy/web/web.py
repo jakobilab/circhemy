@@ -1416,8 +1416,8 @@ into CircPedia2 IDs, but also output CircAtlas IDs.
                   -H 'accept: application/json'
                   -H 'Content-Type: application/json'
                   -d '{
-                      "input": "CircAtlas",
-                      "output": ["CircPedia2","CircAtlas"],
+                      "input": "CircAtlas2",
+                      "output": ["CircPedia2","CircAtlas2"],
                       "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
                       }'
 
@@ -1461,8 +1461,8 @@ Grid tables for any other postprocessing:
                         "the internal database that fulfil a set of user-defined"
                         " constraints.")
             ui.markdown("""
-Example: Retrieve all circRNAs with a CircAtlas ID containing *atf* or *xbp1*, 
-return the IDs in circBase and circAtlas format:
+Example: Retrieve all circRNAs with a CircAtlas2 ID containing *atf* or *xbp1*, 
+return the IDs in circBase and circAtlas2 format:
 
                 curl -X 'POST'
                   'https://circhemy.jakobilab.org/api/query'
@@ -1472,7 +1472,7 @@ return the IDs in circBase and circAtlas format:
                   "input": [
                     {
                       "query": "pdia4",
-                      "field": "CircAtlas",
+                      "field": "CircAtlas2",
                       "operator1": "AND",
                       "operator2": "LIKE"
                     },
@@ -1485,7 +1485,6 @@ return the IDs in circBase and circAtlas format:
                   ],
                   "output": [
                     "circBase",
-                    "CircAtlas"
                   ]
                 }}'
 
@@ -1507,58 +1506,58 @@ Grid tables for any other postprocessing:
                       "field": "circBase"
                     },
                     {
-                      "headerName": "CircAtlas",
-                      "field": "CircAtlas"
+                      "headerName": "CircAtlas2",
+                      "field": "CircAtlas2"
                     }
                   ],
                   "rowData": [
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0001"
+                      "CircAtlas2": "hsa-NPPA_0001"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0002"
+                      "CircAtlas2": "hsa-NPPA_0002"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0001"
+                      "CircAtlas2": "hsa-NPPA-AS1_0001"
                     },
                     {
                       "circBase": "hsa_circ_0009871",
-                      "CircAtlas": "hsa-NPPA-AS1_0004"
+                      "CircAtlas2": "hsa-NPPA-AS1_0004"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0002"
+                      "CircAtlas2": "hsa-NPPA-AS1_0002"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0003"
+                      "CircAtlas2": "hsa-NPPA-AS1_0003"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0001"
+                      "CircAtlas2": "hsa-NPPA_0001"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA_0002"
+                      "CircAtlas2": "hsa-NPPA_0002"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0001"
+                      "CircAtlas2": "hsa-NPPA-AS1_0001"
                     },
                     {
                       "circBase": "hsa_circ_0009871",
-                      "CircAtlas": "hsa-NPPA-AS1_0004"
+                      "CircAtlas2": "hsa-NPPA-AS1_0004"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0002"
+                      "CircAtlas2": "hsa-NPPA-AS1_0002"
                     },
                     {
                       "circBase": "",
-                      "CircAtlas": "hsa-NPPA-AS1_0003"
+                      "CircAtlas2": "hsa-NPPA-AS1_0003"
                     }
                   ]
                 }
@@ -1619,12 +1618,12 @@ The installation requires running python on the command line:
                         "input circRNA ID into different one or more database"
                         "identifiers.")
             ui.markdown("""
-Example: Convert a list of circatlas IDs read via STDIN from file `input.csv` 
-into circpedia2 IDs, but also output circatlas IDs, while writing the output to
+Example: Convert a list of Circpedia2 IDs read via STDIN from file `input.csv` 
+into Circpedia2 IDs, but also output CircAtlas2 IDs, while writing the output to
 `/tmp/output.csv`:
 
-``cat input.csv | circhemy convert  -q STDIN -i circatlas -o circpedia2 
-circatlas -O /tmp/output.csv``""")
+``cat input.csv | circhemy convert  -q STDIN -i CircAtlas2 -o Circpedia2 
+CircAtlas2 -O /tmp/output.csv``""")
 
         with ui.card_section():
             ui.markdown("**Query module**")
@@ -1632,11 +1631,11 @@ circatlas -O /tmp/output.csv``""")
                         "the internal database that fulfil a set of user-defined"
                         " constraints.")
             ui.markdown("""
-Example: Retrieve a list of circbase and circatlas circRNA IDs that are located
+Example: Retrieve a list of circBase and CircAtlas2 circRNA IDs that are located
 on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
 the rn6 genome build.
 
-``circhemy query -o circbase circatlas -C chr3 
+``circhemy query -o circBase CircAtlas2 -C chr3 
 -s rattus_norvegicus -g rn6``
 """)
 
