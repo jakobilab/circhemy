@@ -40,6 +40,9 @@ jobs:
       run: |
          circhemy --version
          which circhemy
+    - name: Download circhemy database
+      run: |
+         circhemy download
     - name: Running circhemy convert test
       run: |
          cat `python3 -c "import site; print(site.getsitepackages()[0])"`/circhemy/data/circhemy_query.results | circhemy convert  -q STDIN -i circBase -o CircAtlas2 circBase Genome > convert_output
