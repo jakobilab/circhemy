@@ -82,11 +82,11 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       run: >-
         gh release create
-        '${{ github.ref }}'
+        '${{ github.ref_name }}'
         --repo '${{ github.repository }}'
-        --notes "Text to be filled before switching release active"
+        --notes "Fill text before switching release active"
         --draft
-        --title '${{ github.sha	 }}'
+        --title '${{ github.sha }}'
     - name: Upload artifact signatures to GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
