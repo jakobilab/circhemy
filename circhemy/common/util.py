@@ -20,9 +20,9 @@ import circhemy
 class Util(object):
 
     # global settings
-    software_version = "0.0.3-dev"
+    software_version = "0.1.0"
 
-    database_version = "2023.04"
+    database_version = "2024.04"
 
     program_name = "circhemy"
 
