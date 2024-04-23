@@ -1408,10 +1408,8 @@ shown below.
             ui.markdown("The convert module is able to convert from a range of "
                         "input circRNA ID into different one or more database"
                         "identifiers.")
-            ui.markdown("""
-Example: Convert a list of CircAtlas IDs into circBase and  
-into CircPedia2 IDs, but also output CircAtlas IDs. 
-
+            ui.markdown('''
+                ```Bash
                 curl -X 'POST' 'https://circhemy.jakobilab.org/api/convert'
                   -H 'accept: application/json'
                   -H 'Content-Type: application/json'
@@ -1420,8 +1418,8 @@ into CircPedia2 IDs, but also output CircAtlas IDs.
                       "output": ["CircPedia2","CircAtlas2"],
                       "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
                       }'
-
-""")
+                ```
+''')
             ui.markdown("""
 
 Output is returned as JSON-formatted string which can directly be used for AG 
@@ -1430,7 +1428,7 @@ Grid tables for any other postprocessing:
 """)
 
             ui.markdown("""
-
+                ```JSON
                 {
                   "columnDefs": [
                     {
@@ -1453,6 +1451,7 @@ Grid tables for any other postprocessing:
                     }
                   ]
                 }
+                ```
 """)
 
         with ui.card_section():
@@ -1463,7 +1462,7 @@ Grid tables for any other postprocessing:
             ui.markdown("""
 Example: Retrieve all circRNAs with a CircAtlas2 ID containing *atf* or *xbp1*, 
 return the IDs in circBase and circAtlas2 format:
-
+                ```Bash
                 curl -X 'POST'
                   'https://circhemy.jakobilab.org/api/query'
                   -H 'accept: application/json'
@@ -1487,8 +1486,7 @@ return the IDs in circBase and circAtlas2 format:
                     "circBase",
                   ]
                 }}'
-
-
+                ```
             """)
             ui.markdown("""
 
@@ -1498,7 +1496,7 @@ Grid tables for any other postprocessing:
             """)
 
             ui.markdown("""
-
+                ```JSON
                 {
                   "columnDefs": [
                     {
@@ -1561,6 +1559,7 @@ Grid tables for any other postprocessing:
                     }
                   ]
                 }
+                ```
             """)
 
     with ui.card().style('width: 100%;') as card:
@@ -1594,8 +1593,8 @@ core modules, namely convert and query. The command line version requires
 only one external dependency, ``sqlite3``, for access to the internal SQLite3
 database with circRNA ID data
 
-Installation is managed through ``pip3 install circhemy`` or ``python3 setup.py
-install`` when installed from the cloned GitHub repository. No sudo access is
+Installation is managed through ``pip3 install circhemy`` or ``pip install`` 
+when installed from the cloned GitHub repository. No sudo access is
 required if the installation is executed with ``--user`` which will install the
 package in a user-writeable folder. The binaries should be installed
 to ``/home/$user/.local/bin/`` in case of Debian-based systems.
@@ -1605,9 +1604,11 @@ any other distribution.
 
 The installation requires running python on the command line:
 
+```Bash
     git clone https://github.com/jakobilab/circhemy.git
     cd circhemy
     pip3 install .
+```
 """)
 
     with ui.card().style('width: 100%;') as card:
@@ -1622,8 +1623,10 @@ Example: Convert a list of Circpedia2 IDs read via STDIN from file `input.csv`
 into Circpedia2 IDs, but also output CircAtlas2 IDs, while writing the output to
 `/tmp/output.csv`:
 
-``cat input.csv | circhemy convert  -q STDIN -i CircAtlas2 -o Circpedia2 
-CircAtlas2 -O /tmp/output.csv``""")
+```Bash
+cat input.csv | circhemy convert  -q STDIN -i CircAtlas2 -o Circpedia2 CircAtlas2 -O /tmp/output.csv
+```
+""")
 
         with ui.card_section():
             ui.markdown("**Query module**")
@@ -1635,8 +1638,9 @@ Example: Retrieve a list of circBase and CircAtlas2 circRNA IDs that are located
 on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
 the rn6 genome build.
 
-``circhemy query -o circBase CircAtlas2 -C chr3 
--s rattus_norvegicus -g rn6``
+```Bash
+circhemy query -o circBase CircAtlas2 -C chr3 -s rattus_norvegicus -g rn6
+```
 """)
 
     with ui.card().style('width: 100%;') as card:
