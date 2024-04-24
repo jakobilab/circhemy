@@ -5,6 +5,8 @@
 
 .. image:: https://github.com/jakobilab/circhemy/raw/main/circhemy/web/static/logo_small.png
    :alt: circhemy - The alchemy of circular RNA ID conversion
+   :target: https://circhemy.jakobilab.org/
+
 
 |downloads| |pypi| |ci| |docker|
 
