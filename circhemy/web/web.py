@@ -78,7 +78,7 @@ def main():
     # run main application
     ui.run(title=util.program_name + " " + util.software_version,
            show=False,
-           favicon="https://circhemy.jakobilab.org/favicon/favicon.ico",
+           # favicon="https://circhemy.jakobilab.org/favicon/favicon.ico",
            binding_refresh_interval=0.1
            )
 
