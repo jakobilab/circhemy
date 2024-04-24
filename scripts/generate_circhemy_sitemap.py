@@ -34,6 +34,7 @@ keyword_db_columns = [
     "Gene",
     "ENSEMBL",
     "circBase",
+    "circBase_alt",
     "CircAtlas2",
     "circRNADb",
     "circBank",
