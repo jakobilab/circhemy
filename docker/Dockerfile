@@ -25,8 +25,6 @@ RUN apt-get update; DEBIAN_FRONTEND=noninteractive TZ=America/Phoenix apt-get in
 # install circhemy
 # unpack database (as the container is immutable)
 
-RUN git config --global url."https://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@github.com/".insteadOf "https://github.com/"
-
 RUN git clone https://github.com/jakobilab/circhemy.git ; ls -la circhemy/;
 
 RUN wget https://bootstrap.pypa.io/get-pip.py; python3 get-pip.py; rm get-pip.py; python3 -m pip install -U setuptools; python3 -m pip install circhemy/; pip cache purge; apt-get purge python3-dev; apt-get autoremove; apt-get autoclean; rm -rf /var/lib/apt/lists/*; rm circhemy/ -rf; circhemy download;
