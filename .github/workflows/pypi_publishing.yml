@@ -37,7 +37,7 @@ jobs:
     - build
     runs-on: ubuntu-latest
     environment:
-      name: pypi-test
+      name: PyPI
       url: https://test.pypi.org/p/circhemy  # Replace <package-name> with your PyPI project name
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
