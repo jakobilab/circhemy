@@ -776,9 +776,9 @@ def ui_layout_add_head_html() -> None:
     ui.add_head_html('''
     <meta
       name="description"
-      content="circhemy is an easy-to-use, web interface, web service, and 
-      command line tool that help researchers to easily convert between
-      different ID formats of circular RNAs (circRNAs)."
+      content="Circhemy is an easy-to-use web interface, web service, and 
+      command line tool that help biomedical researchers to easily convert
+      between different circular RNAs (circRNAs) ID formats."
     />
     ''')
     ui.add_head_html(
