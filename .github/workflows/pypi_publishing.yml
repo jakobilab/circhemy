@@ -1,8 +1,11 @@
 name: Publish to PyPI
 
+# runs only when a new tag is pushed
 on:
   push:
-
+    # Pattern matched against refs/tags
+    tags:
+      - '*'           # Push events to every tag not containing /
 jobs:
   build:
 
