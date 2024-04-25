@@ -94,7 +94,13 @@ def generate_sitemap(output_dir: str, db_connection, base_url: str):
 
     # write header for first file
     print('<?xml version="1.0" encoding="UTF-8"?>', file=output_file)
-    print('<urlset xmln ="http://www.sitemaps.org/schemas/sitemap/0.9">', file=output_file)
+    print('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+          ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+          ' xmlns:xhtml="http://www.w3.org/1999/xhtml"'
+          ' xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 '
+          'http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd '
+          'http://www.w3.org/1999/xhtml '
+          'http://www.w3.org/2002/08/xhtml/xhtml1-strict.xsd">', file=output_file)
 
     # this is the main loop
     for circrna_id in circrna_id_list:
@@ -134,7 +140,15 @@ def generate_sitemap(output_dir: str, db_connection, base_url: str):
 
                     # write new header
                     print('<?xml version="1.0" encoding="UTF-8"?>', file=output_file)
-                    print('<urlset xmln ="http://www.sitemaps.org/schemas/sitemap/0.9">', file=output_file)
+                    print(
+                        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+                        ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+                        ' xmlns:xhtml="http://www.w3.org/1999/xhtml"'
+                        ' xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 '
+                        'http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd '
+                        'http://www.w3.org/1999/xhtml '
+                        'http://www.w3.org/2002/08/xhtml/xhtml1-strict.xsd">',
+                        file=output_file)
 
                 print("\t<url>", file=output_file)
                 print("\t\t<loc>" + base_url + str(circrna_data[0][current_id]) + "</loc>", file=output_file)
