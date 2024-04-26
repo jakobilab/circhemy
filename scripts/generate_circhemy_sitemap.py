@@ -124,7 +124,7 @@ def generate_sitemap(output_dir: str, db_connection, base_url: str):
 
                     # gzip file
 
-                    os.system("gzip -f " + make_filename(output_dir, sitemap_counter))
+                    #os.system("gzip -f " + make_filename(output_dir, sitemap_counter))
 
                     # increase file counter
                     sitemap_counter += 1
@@ -161,7 +161,7 @@ def generate_sitemap(output_dir: str, db_connection, base_url: str):
     output_file.flush()
 
     # gzip last file
-    os.system("gzip -f " + make_filename(output_dir, sitemap_counter))
+    #os.system("gzip -f " + make_filename(output_dir, sitemap_counter))
 
     overall_counter += per_file_counter
     print("Done.")
@@ -180,7 +180,7 @@ def generate_sitemap(output_dir: str, db_connection, base_url: str):
     # now we have to create the index file
     for sitemap in range(0, sitemap_counter):
         print("\t<sitemap>", file=output_file)
-        print("\t\t<loc>" + make_filename(sitemap_base, tmp_counter) + ".gz</loc>", file=output_file)
+        print("\t\t<loc>" + make_filename(sitemap_base, tmp_counter) + "</loc>", file=output_file)
         print("\t\t<lastmod>" + lastmod_time + "</lastmod>", file=output_file)
         print("\t</sitemap>", file=output_file)
 
@@ -188,7 +188,7 @@ def generate_sitemap(output_dir: str, db_connection, base_url: str):
     print('</sitemapindex>', file=output_file)
     output_file.flush()
 
-    os.system("gzip -f " + output_dir + "/" + "sitemap_index.xml")
+    #os.system("gzip -f " + output_dir + "/" + "sitemap_index.xml")
 
 
 parser = argparse.ArgumentParser(
