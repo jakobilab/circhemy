@@ -76,7 +76,7 @@ ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
 
 def main():
     # run main application
-    ui.run(title=util.program_name + " " + util.software_version,
+    ui.run(title=util.program_name_long + " - Release " + util.database_version,
            show=False,
            # favicon="https://circhemy.jakobilab.org/favicon/favicon.ico",
            binding_refresh_interval=0.1
@@ -791,7 +791,7 @@ def ui_layout_circrna_header_meta(input_dict, circrna_id):
 
     meta_string = ("CircRNA " + circrna_id + csnv1 +
                    ", " + pos + " (" + build + ")" + gene +
-                   " in circhemy, the circRNA ID database.")
+                   " in circhemy, the circRNA ID database")
 
     return meta_string
 
