@@ -807,14 +807,10 @@ def ui_layout_add_head_html(input_dict=None, circrna_id=None) -> None:
                          +" \"/>")
 
     else:
-        ui.add_head_html('''
-        <meta
-          name="description"
-          content="Circhemy is an easy-to-use web service and command line
-           tool helping researchers to convert between different
-            circular RNA ID formats."
-        />
-        ''')
+        ui.add_head_html("<meta name=\"description\"  content=\"Circhemy is an "
+                         "easy-to-use web service and command line tool helping"
+                         " researchers to convert between different"
+                         " circular RNA ID formats.\"/>")
     ui.add_head_html(
         (Path(__file__).parent / 'static' / 'header.html').read_text())
     ui.add_head_html(
