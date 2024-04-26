@@ -789,7 +789,7 @@ def ui_layout_circrna_header_meta(input_dict, circrna_id):
     else:
         gene = ""
 
-    meta_string = ("Details of circular RNA " + circrna_id + csnv1 +
+    meta_string = ("CircRNA " + circrna_id + csnv1 +
                    ", " + pos + " (" + build + ")" + gene +
                    " in circhemy, the circRNA ID database.")
 
@@ -1326,7 +1326,7 @@ async def page_application_display_circrna_profile(circ_id: str,
     ui_layout_add_head_html(input_dict=output_dict,
                             circrna_id=circ_id)
 
-    ui.page_title("Circular RNA " + circ_id + " - " + util.program_name_long)
+    ui.page_title(circ_id + " - " + util.program_name_long)
 
 # content pages
 
