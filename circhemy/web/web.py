@@ -772,15 +772,49 @@ def ui_layout_add_left_drawer(convert=False) -> None:
                     ui_convert_form_values['db_checkboxes'] = checkbox_list
 
 
-def ui_layout_add_head_html() -> None:
-    ui.add_head_html('''
-    <meta
-      name="description"
-      content="Circhemy is an easy-to-use web interface, web service, and 
-      command line tool that help biomedical researchers to easily convert
-      between different circular RNAs (circRNAs) ID formats."
-    />
-    ''')
+def ui_layout_circrna_header_meta(input_dict, circrna_id):
+
+    if 'CSNv1' in input_dict and input_dict['CSNv1'] is not None:
+        csnv1 = ", "+input_dict['CSNv1']
+    else:
+        csnv1 = ""
+
+    pos = (input_dict['Chr'] + ":" +
+           str(input_dict['Start']) + "-" + str(input_dict['Stop']))
+    species = input_dict['Species']
+    build = input_dict['Genome']
+
+    if 'Gene' in input_dict and input_dict['Gene'] is not None:
+        gene = ", originating from " + input_dict['Gene']
+    else:
+        gene = ""
+
+    meta_string = ("Details of circular RNA " + circrna_id + csnv1 +
+                   ", " + pos + " (" + build + ")" + gene +
+                   " in circhemy, the circRNA ID database.")
+
+    return meta_string
+
+
+def ui_layout_add_head_html(input_dict=None, circrna_id=None) -> None:
+
+    print(input_dict)
+
+    if input_dict:
+
+        ui.add_head_html("<meta name=\"description\" content=\" "+
+                         ui_layout_circrna_header_meta(input_dict, circrna_id)
+                         +" \"/>")
+
+    else:
+        ui.add_head_html('''
+        <meta
+          name="description"
+          content="Circhemy is an easy-to-use web service and command line
+           tool helping researchers to convert between different
+            circular RNA ID formats."
+        />
+        ''')
     ui.add_head_html(
         (Path(__file__).parent / 'static' / 'header.html').read_text())
     ui.add_head_html(
@@ -1074,7 +1108,6 @@ async def page_application_display_circrna_profile():
 @ui.page('/circrna/{circ_id}', title=util.program_name_long)
 async def page_application_display_circrna_profile(circ_id: str,
                                                    client: Client):
-    ui_layout_add_head_html()
     ui_layout_add_header()
 
     output = util.run_circrna_query(util, circrna_id=circ_id)
@@ -1169,6 +1202,7 @@ async def page_application_display_circrna_profile(circ_id: str,
                         if str(output[hit][hit_id]) == circ_id:
                             source_database_print = local_columns[hit_id]
 
+                    print(output_dict)
                     output_dict['Coordinates'] = 1
                     output_dict[
                         'Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
@@ -1289,12 +1323,10 @@ async def page_application_display_circrna_profile(circ_id: str,
 
     ui_layout_add_footer_and_right_drawer()
 
-    # update page title
-    # https://github.com/zauberzeug/nicegui/discussions/830#discussioncomment-5714587
-    await client.connected(timeout=5)
-    await ui.run_javascript(
-        f'document.title = "{"Circular RNA " + circ_id + " - " + util.program_name_long or "nothing"}";')
+    ui_layout_add_head_html(input_dict=output_dict,
+                            circrna_id=circ_id)
 
+    ui.page_title("Circular RNA " + circ_id + " - " + util.program_name_long)
 
 # content pages
 
