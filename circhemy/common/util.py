@@ -423,7 +423,7 @@ class Util(object):
                                             " exorBase2 == ? OR " +
                                             " ENSEMBL == ? OR " +
                                             " Gene == ? OR " +
-                                            " Arraystar == ?;", (
+                                            " Arraystar == ? LIMIT 100;", (
                                                 circrna_id, circrna_id, circrna_id,
                                                 circrna_id, circrna_id, circrna_id,
                                                 circrna_id, circrna_id, circrna_id,
