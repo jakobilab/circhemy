@@ -23,12 +23,11 @@ from typing import List, Any
 from uuid import uuid4
 
 # models for REST API endpoints
-from pydantic import BaseModel, validator
-from pygments.formatters import HtmlFormatter
+from pydantic import BaseModel, field_validator
+from pygments.formatters.html import HtmlFormatter
 
 # regex for circRNA parsing
 import re
-import os
 
 # own util functions
 import circhemy.common.util as common
@@ -48,15 +47,21 @@ from dateutil.parser import parse
 
 from io import StringIO
 from html.parser import HTMLParser
+from html import escape
+from urllib.parse import quote
 
 # create util instance for the web app
 util = common.Util
+
+download_dir = Path("tmp")
+download_dir.mkdir(exist_ok=True)
 
 # add static files for fonts and favicon
 app.add_static_files('/favicon', Path(__file__).parent / 'favicon')
 app.add_static_files('/fonts', Path(__file__).parent / 'fonts')
 app.add_static_files('/static', Path(__file__).parent / 'static')
 app.add_static_files('/sitemap', 'web/sitemap/')
+app.add_static_files('/download', download_dir)
 
 # set up global variables
 
@@ -99,6 +104,16 @@ class RedmineParser(HTMLParser):
 
     def get_data(self):
         return self.text.getvalue()
+
+
+def html_link(url: str, text: str, external: bool = True) -> str:
+    target = ' target="_blank" rel="noopener noreferrer"' if external else ''
+    return (
+        f'<a style="text-decoration: underline;" '
+        f'href="{escape(url, quote=True)}"{target}>'
+        f'{escape(text)}'
+        f'</a>'
+    )
 
 
 def redmine_remove_tags(html):
@@ -162,14 +177,10 @@ def check_if_db_is_selected(form_values) -> List[Any]:
 def check_query_text_field() -> None:
 
     if 'submit_query_button' in ui_convert_form_values:
-        all_good = True
-
-        for form in ui_query_forms:
-
-            if not form['query'].value:
-                all_good = False
-            else:
-                all_good = True
+        all_good = all(
+            form['query'].value
+            for form in ui_query_forms
+        )
 
         if all_good:
             ui_convert_form_values['submit_query_button'].props(
@@ -203,70 +214,46 @@ def ui_generate_external_link(external_site: str, values: dict):
     # since we need to build the link component first
 
     pos = values['Chr'] + ":" + \
-          str(values['Start']) + \
-          "-" + \
+          str(values['Start']) + "-" + \
           str(values['Stop'])
-
-    tmp_start = values['Start']
-    tmp_stop = values['Stop']
 
     print_strand = ""
     if values['Strand']:
         print_strand = " [" + values['Strand'] + "]"
 
     print_pos = values[
-                    'Chr'] + ": " + f'{tmp_start:,}' + " - " + f'{tmp_stop:,}' + print_strand
+                    'Chr'] + ": " + f'{values["Start"]:,}' + " - " + f'{values["Stop"]:,}' + print_strand
 
     if external_site == "Coordinates" and values["Coordinates"]:
         # build pos format: chrXZY:1234-5789
-
-        build = values['Genome']
-
-        returnval = "<a style=\"text-decoration: underline;" \
-                    "\" href=\"" + util.external_db_urls[
-                        "Genome-Browser"] \
-                    + "db=" + build + "&" \
-                    + "position=" + pos + "\"" \
-                    + " target=\"_blank\">" \
-                    + print_pos + "</a>"
+        return html_link(
+            util.external_db_urls["Genome-Browser"] +
+            "?db=" + values["Genome"] +
+            "&position=" + quote(pos, safe=''),
+            print_pos)
 
     elif external_site == "CSNv1" and values["CSNv1"]:
-
         pos = values['Chr'] + ":" + \
-              str(values['Start']) + \
-              "-" + \
+              str(values['Start']) + "-" + \
               str(values['Stop'])
 
         build = values['Genome']
 
-        returnval = "<a style=\"text-decoration: underline;\" href=\"/circrna/" + \
-                    values['CSNv1'] + "\">" + values['CSNv1'] + \
-                    "</a> <a style=\"text-decoration: underline;" \
-                    "\" href=\"" + util.external_db_urls["CSNv1"] \
-                    + "db=" + build + "&" \
-                    + "position=" + pos + "&hgct_customText=https://static.jakobilab.org/circhemy/" + \
-                    values['Genome'] + ".bed\"" \
-                    + " target=\"_blank\">[view exons in Genome Browser]</a>"
+        return f"{html_link('/', values['CSNv1'])} <a style='text-decoration: underline;' href='{util.external_db_urls["CSNv1"]}db={build}&position={pos}&hgct_customText={util.external_db_urls["CSNv1"]}{build}.bed' target='_blank'>[view exons in Genome Browser]</a>"
 
     elif external_site == "Species" or external_site == "Gene" and values[external_site]:
+        return f"<i>{values[external_site].replace('_', ' ')}</i>"
 
-        returnval = "<i>" + values[external_site].replace("_", " ") + "</i>"
+    elif values[external_site] and util.external_db_urls[external_site]:
+        return html_link(
+            util.external_db_urls[external_site] + quote(str(values[external_site]), safe=''),
+            str(values[external_site])
+        )
 
-    elif values[external_site] and util.external_db_urls[
-        external_site]:
-        returnval = "<a style=\"text-decoration: underline;" \
-                    "\" href=\"" + util.external_db_urls[
-                        external_site] \
-                    + str(values[external_site]) + "\" target=\"_blank\">" \
-                    + str(values[external_site]) + "</a>"
-
-    elif values[external_site] and not util.external_db_urls[
-        external_site]:
-        returnval = str(values[external_site])
+    elif values[external_site] and not util.external_db_urls[external_site]:
+        return escape(str(values[external_site]))
     else:
-        returnval = ""
-
-    return returnval
+        return ""
 
 
 def ui_result_table_get_coordinates(input_list=None):
@@ -317,7 +304,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
     output_fields = ""
 
     # function is called from REST API
-    if input_id and type(input_id) != list:
+    if input_id and not isinstance(input_id, list):
         circrna_list = query_data
 
         output_fields = output_ids
@@ -331,7 +318,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
     # REST API query gets input_id from type list
     # in this case the list holds the constraints for SQL query
     # construction
-    elif input_id and type(input_id) is list:
+    elif input_id and isinstance(input_id, list):
 
         output_fields = output_ids
 
@@ -348,7 +335,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                 tmp = constraint.query.replace("*", "", 1)
                 sql_query += constraint.field + " LIKE \"%" \
                              + tmp + "%\" "
-            elif constraint.operator2 == "is":
+            elif constraint.operator2 == "IS":
                 sql_query += constraint.field + " == \"" \
                              + constraint.query + "\" "
             elif constraint.operator2 == ">":
@@ -364,7 +351,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                                sql_query)
 
     # function called from web convert module
-    elif ui_convert_form_values['mode'] is "convert":
+    elif ui_convert_form_values['mode'] == "convert":
 
         output_fields = check_if_db_is_selected(ui_convert_form_values)
 
@@ -395,7 +382,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
             output_fields.insert(0, ui_convert_form_values['db_checkbox'].value)
 
     # function called from web query module
-    elif ui_convert_form_values['mode'] is "query":
+    elif ui_convert_form_values['mode'] == "query":
 
         output_fields = check_if_db_is_selected(ui_convert_form_values)
 
@@ -416,17 +403,17 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                 # this is an addon condition with two operators
                 sql_query += " " + form['operator1'].value + " "
 
-            if form['operator2'].value is "LIKE":
+            if form['operator2'].value == "LIKE":
                 tmp = form['query'].value.replace("*", "", 1)
                 sql_query += form['field'].value + " LIKE \"%" \
                              + tmp + "%\" "
-            elif form['operator2'].value is "is":
+            elif form['operator2'].value == "is":
                 sql_query += form['field'].value + " == \"" \
                              + form['query'].value + "\" "
-            elif form['operator2'].value is ">":
+            elif form['operator2'].value == ">":
                 sql_query += form['field'].value + " > \"" \
                              + form['query'].value + "\" "
-            elif form['operator2'].value is "<":
+            elif form['operator2'].value == "<":
                 sql_query += form['field'].value + " < \"" \
                              + form['query'].value + "\" "
 
@@ -467,7 +454,7 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
 
         # make sure we only call this if called from web,
         # otherwise this field is not initialized
-        if not input_id and ui_convert_form_values['mode'] is "convert":
+        if not input_id and ui_convert_form_values['mode'] == "convert":
             processed_output = processed_output + item \
                                + ui_convert_form_values['select2'].value
 
@@ -548,13 +535,12 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
                                 + "Circhemy profile" + "</a>"
 
                 elif item[0] is not None \
-                        and util.external_db_urls[item[1]] \
-                        and not input_id:
-                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
-                                        "\" href=\"" + util.external_db_urls[
-                                            item[1]] \
-                                        + str(item[0]) + "\" target=\"_blank\">" \
-                                        + str(item[0]) + "</a>"
+                         and util.external_db_urls[item[1]] \
+                         and not input_id:
+                    tmp_dict[item[1]] = html_link(
+                        util.external_db_urls[item[1]] + quote(str(item[0]), safe=''),
+                        str(item[0])
+                    )
                 else:
                     tmp_dict[item[1]] = item[0]
 
@@ -582,11 +568,28 @@ def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
         table.style(add='height: calc(100vh - 220px)')
         table.props("domLayout='autoHeight'")
         table.on('firstDataRendered',
-                 lambda: table.run_column_method('autoSizeAllColumns'))
-        table.classes("ag-theme-balham")
+                 lambda: table.run_grid_method('autoSizeAllColumns'))
+        # table.classes("ag-theme-balham")
+        # table.classes("ag-theme-alpine")
+        # table.style(add=(
+        #     'height: calc(100vh - 220px); '
+        #     'width: 100%; '
+        #     '--ag-font-family: Inter, Arial, sans-serif; '
+        #     '--ag-font-size: 13px; '
+        #     '--ag-row-height: 36px; '
+        #     '--ag-header-height: 40px; '
+        #     '--ag-background-color: #ffffff; '
+        #     '--ag-header-background-color: #eef5ff; '
+        #     '--ag-header-foreground-color: #1f3b64; '
+        #     '--ag-foreground-color: #1f2937; '
+        #     '--ag-odd-row-background-color: #f8fbff; '
+        #     '--ag-border-color: #d4e2f5; '
+        #     '--ag-row-hover-color: #e9f3ff; '
+        #     '--ag-selected-row-background-color: #cfe3ff; '
+        # ))
         table.update()
 
-        if ui_convert_form_values['mode'] is "convert":
+        if ui_convert_form_values['mode'] == "convert":
 
             processed_output = processed_output \
                                + util.process_sql_output(output,
@@ -798,8 +801,6 @@ def ui_layout_circrna_header_meta(input_dict, circrna_id):
 
 def ui_layout_add_head_html(input_dict=None, circrna_id=None) -> None:
 
-    print(input_dict)
-
     if input_dict:
 
         ui.add_head_html("<meta name=\"description\" content=\" "+
@@ -857,8 +858,8 @@ def ui_layout_add_header() -> None:
             with ui.menu().classes('bg-primary text-white text-lg') as menu:
                 for title, target in menu_items.items():
                     ui.menu_item(title,
-                                 on_click=lambda _, target=target: ui.open(
-                                     target))
+                                 on_click=lambda _, target=target:
+                                 ui.navigate.to(target))
             ui.button(on_click=menu.open).props('flat color=white icon=menu')
         with ui.row().classes('max-lg:hidden'):
             for title, target in menu_items.items():
@@ -867,10 +868,19 @@ def ui_layout_add_header() -> None:
             svg.github().classes('fill-white scale-125 m-1')
 
 
+def ensure_database_stats_loaded() -> None:
+    if 'chart' not in ui_convert_form_values or 'chart2' not in ui_convert_form_values:
+        ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
+            ui_convert_form_values['chart2'] = util.database_stats(util)
+
+
 def ui_layout_add_footer_and_right_drawer() -> None:
+    ensure_database_stats_loaded()
+
     with ui.right_drawer(fixed=False).style('background-color: #ebf1fa'):
         ui.label('Database Version ' + util.database_version + ' statistics')
         ui.label('')
+
 
         ui.label('Database by species/genome')
 
@@ -969,7 +979,7 @@ track of known circRNAs and their identifiers.
     with ui.row():
         ui_convert_form_values['submit_button'] = \
             ui.button('Convert circRNA IDs', on_click=lambda:
-            ui.open(page_application_display_results)).props("disabled=true")
+            ui.navigate.to('/results')).props("disabled=true")
 
         ui_convert_form_values['example_button'] = \
             ui.button('Load example data', on_click=lambda:
@@ -1015,7 +1025,7 @@ async def page_application_query():
     with ui.row():
         ui_convert_form_values['submit_query_button'] = \
             ui.button('Submit query', on_click=lambda:
-            ui.open(page_application_display_results)).props("disabled=false")
+            ui.navigate.to('/results')).props("disabled=false")
 
         ui_convert_form_values['add_condition_button'] = \
             ui.button('Add condition', on_click=lambda:
@@ -1052,31 +1062,26 @@ async def page_application_display_results():
         processed_output, ui_convert_form_values[
             'table2'] = ui_generate_result_table()
 
-        if not os.path.isdir("tmp/"):
-            os.makedirs("tmp/")
+        output_file = download_dir / f"{session_id}.csv"
 
         try:
-            with open('tmp/' + session_id + ".csv", 'w') as f:
+            with output_file.open('w') as f:
                 f.write(processed_output)
-        except FileNotFoundError:
+        except OSError:
             print("Output file could not be created")
-            exit(-1)
-
-        f.close()
-
-        app.add_static_files('/download', 'tmp')
+            return
 
         with ui.row().classes('self-center'):
             ui.button('Download table',
-                      on_click=lambda e: ui.open(
+                      on_click=lambda e: ui.navigate.to(
                           '/download/' + session_id + ".csv")) \
                 .classes('self-center')
 
             ui.button('New query',
-                      on_click=lambda e: ui.open('/')).classes('self-center')
+                      on_click=lambda e: ui.navigate.to('/')).classes('self-center')
 
     else:
-        ui.open(page_application_convert)
+        ui.navigate.to('/')
 
         ui.html('<strong>Internal error encountered.</strong>'
                 '<br/><a href=\"/\">Returning to main page</a>'
@@ -1084,7 +1089,7 @@ async def page_application_display_results():
 
 
 @ui.page('/circrna/')
-async def page_application_display_circrna_profile():
+async def page_application_display_circrna_profile_missing_id():
     ui_layout_add_head_html()
     ui_layout_add_header()
 
@@ -1107,6 +1112,7 @@ async def page_application_display_circrna_profile(circ_id: str,
     ui_layout_add_header()
 
     output = util.run_circrna_query(util, circrna_id=circ_id)
+    output_dict = None
 
     if len(output) > 0:
 
@@ -1198,7 +1204,6 @@ async def page_application_display_circrna_profile(circ_id: str,
                         if str(output[hit][hit_id]) == circ_id:
                             source_database_print = local_columns[hit_id]
 
-                    print(output_dict)
                     output_dict['Coordinates'] = 1
                     output_dict[
                         'Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
@@ -1319,8 +1324,11 @@ async def page_application_display_circrna_profile(circ_id: str,
 
     ui_layout_add_footer_and_right_drawer()
 
-    ui_layout_add_head_html(input_dict=output_dict,
-                            circrna_id=circ_id)
+    if output_dict:
+        ui_layout_add_head_html(input_dict=output_dict,
+                                circrna_id=circ_id)
+    else:
+        ui_layout_add_head_html()
 
     ui.page_title(circ_id + " - " + util.program_name_long)
 
@@ -1329,9 +1337,6 @@ async def page_application_display_circrna_profile(circ_id: str,
 
 @ui.page('/about')
 async def page_about():
-    ui_layout_add_head_html()
-    ui_layout_add_header()
-
     ui_layout_add_head_html()
     ui_layout_add_header()
 
@@ -1443,7 +1448,7 @@ shown below.
                   -H 'Content-Type: application/json'
                   -d '{
                       "input": "CircAtlas2",
-                      "output": ["CircPedia2","CircAtlas2"],
+                      "output": ["Circpedia2","CircAtlas2"],
                       "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
                       }'
                 ```
@@ -1511,7 +1516,7 @@ return the IDs in circBase and circAtlas2 format:
                     }
                   ],
                   "output": [
-                    "circBase",
+                    "circBase"
                   ]
                 }}'
                 ```
@@ -1729,7 +1734,7 @@ async def page_news():
 @app.exception_handler(404)
 async def exception_handler_404(request: Request,
                                 exception: Exception) -> Response:
-    with Client(ui.page('')) as client:
+    with Client(ui.page(''), request=request) as client:
         with ui.column().style(
                 'width: 100%;align-items: center; gap: 0'):
             ui.label('Error 404').style(
@@ -1758,9 +1763,7 @@ async def exception_handler_404(request: Request,
 @app.exception_handler(500)
 async def exception_handler_500(request: Request,
                                 exception: Exception) -> Response:
-    import traceback
-
-    with Client(ui.page('')) as client:
+    with Client(ui.page(''), request=request) as client:
         with ui.column().style(
                 'width: 100%;align-items: center; gap: 0'):
             ui.label('Internal server error').style(
@@ -1796,21 +1799,22 @@ class ConvertModel(BaseModel):
     output: List[str]
     query: List[str]
 
-    @validator('query', each_item=True)
+    @field_validator('query')
+    @classmethod
     def circrna_id_pattern_check(cls, v):
-        if not check_circrna_input_regex(v):
-            raise ValueError('CircRNA IDs contains illegal characters.')
-        if v == "":
-            raise ValueError('No CircRNA IDs for conversion provided.')
-        return v
-
-    @validator('query')
-    def circrna_id_check_length(cls, v):
         if len(v) == 0:
             raise ValueError('No CircRNA IDs for conversion provided.')
+
+        for item in v:
+            if not check_circrna_input_regex(item):
+                raise ValueError('CircRNA IDs contains illegal characters.')
+            if item == "":
+                raise ValueError('No CircRNA IDs for conversion provided.')
+
         return v
 
-    @validator('input', allow_reuse=True)
+    @field_validator('input')
+    @classmethod
     def database_name_check_input(cls, v):
 
         fields_allowed = list(util.external_db_urls.keys())
@@ -1822,16 +1826,19 @@ class ConvertModel(BaseModel):
                              ". Field names are case-sensitive.")
         return v
 
-    @validator('output', each_item=True)
+    @field_validator('output')
+    @classmethod
     def database_name_check_output(cls, v):
 
         fields_allowed = list(util.external_db_urls.keys())
 
-        if v not in fields_allowed:
-            raise ValueError("Unsupported input field provided."
-                             " Supported fields are: "
-                             + ', '.join(fields_allowed) +
-                             ". Field names are case-sensitive.")
+        for field in v:
+            if field not in fields_allowed:
+                raise ValueError("Unsupported output field provided."
+                                 " Supported fields are: "
+                                 + ', '.join(fields_allowed) +
+                                 ". Field names are case-sensitive.")
+
         return v
 
 
@@ -1842,13 +1849,15 @@ class ConstraintModel(BaseModel):
     operator1: str
     operator2: str
 
-    @validator('query')
+    @field_validator('query')
+    @classmethod
     def circrna_id_pattern_check(cls, v):
         if not check_circrna_input_regex(v):
             raise ValueError('Query contains illegal characters.')
         return v
 
-    @validator('field')
+    @field_validator('field')
+    @classmethod
     def field_name_check(cls, v):
 
         fields_allowed = list(util.external_db_urls.keys())
@@ -1860,7 +1869,8 @@ class ConstraintModel(BaseModel):
                              ". Field names are case-sensitive.")
         return v
 
-    @validator('operator1')
+    @field_validator('operator1')
+    @classmethod
     def operator1_check(cls, v):
 
         fields_allowed = ["AND", "OR", "AND NOT"]
@@ -1872,16 +1882,17 @@ class ConstraintModel(BaseModel):
                              ". Field names are case-sensitive.")
         return v
 
-    @validator('operator2')
+    @field_validator('operator2')
+    @classmethod
     def operator2_check(cls, v):
 
-        fields_allowed = ["is", "LIKE", ">", "<"]
+        fields_allowed = ["IS", "LIKE", ">", "<"]
 
         if v not in fields_allowed:
             raise ValueError("Unsupported operator2 provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed) +
-                             ". Field names are case-sensitive.")
+                             + ', '.join(fields_allowed)
+                             + ". Field names are case-sensitive.")
         return v
 
 
@@ -1889,6 +1900,20 @@ class ConstraintModel(BaseModel):
 class QueryModel(BaseModel):
     input: List[ConstraintModel]
     output: List[str]
+
+    @field_validator('output')
+    @classmethod
+    def database_name_check_output(cls, v):
+        fields_allowed = list(util.external_db_urls.keys())
+
+        for field in v:
+            if field not in fields_allowed:
+                raise ValueError("Unsupported output field provided."
+                                 " Supported fields are: "
+                                 + ', '.join(fields_allowed)
+                                 + ". Field names are case-sensitive.")
+
+        return v
 
 
 @app.post("/api/convert")
