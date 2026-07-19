@@ -17,96 +17,65 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# misc web functionality
 from pathlib import Path
 from typing import List, Any
 from uuid import uuid4
+from datetime import datetime
 
-# models for REST API endpoints
 from pydantic import BaseModel, field_validator
 from pygments.formatters.html import HtmlFormatter
 
-# regex for circRNA parsing
 import re
 
-# own util functions
 import circhemy.common.util as common
 
-from datetime import datetime
-
-# core nicegui and web imports
 from fastapi import Request, Response
 from nicegui import Client, app, ui
 from . import svg
 
-# imports for parsing the Redmine news feed
-import feedparser
-from dateutil import tz
-
-from dateutil.parser import parse
-
-from io import StringIO
-from html.parser import HTMLParser
 from html import escape
 from urllib.parse import quote
 
-# create util instance for the web app
+# ========================================================
+# MODULE-LEVEL READ-ONLY CONFIGURATION
+# These are safe to share across all users because they
+# are never mutated after initialization.
+# ========================================================
+
 util = common.Util
 
 download_dir = Path("tmp")
 download_dir.mkdir(exist_ok=True)
 
-# add static files for fonts and favicon
+# Static file mounts
 app.add_static_files('/favicon', Path(__file__).parent / 'favicon')
 app.add_static_files('/fonts', Path(__file__).parent / 'fonts')
 app.add_static_files('/static', Path(__file__).parent / 'static')
 app.add_static_files('/sitemap', 'web/sitemap/')
 app.add_static_files('/download', download_dir)
 
-# set up global variables
-
-# holds most variables for the convert form submission
-ui_convert_form_values = dict()
-
-# holds variables for query-based constraints that are added dynamically
-ui_query_forms = list()
-
-# setup SQLite connection
+# Setup SQLite connection (read-only after init)
 util.setup_database(util, util.database_location)
 
-# initialize statistics chart on the righthand side
-ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
-    ui_convert_form_values['chart2'] = util.database_stats(util)
+# Pre-compute database statistics once at startup (read-only)
+_chart_data, _dbsize_data, _chart2_data = util.database_stats(util)
 
 
 def main():
-    # run main application
-    ui.run(title=util.program_name_long + " - Release " + util.database_version,
-           show=False,
-           # favicon="https://circhemy.jakobilab.org/favicon/favicon.ico",
-           binding_refresh_interval=0.1
-           )
+    ui.run(
+        title=util.program_name_long + " - Release " + util.database_version,
+        show=False,
+        binding_refresh_interval=0.1,
+        storage_secret="circhemy-secret-change-in-production",
+    )
 
 
-# util functions
-
-
-class RedmineParser(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.reset()
-        self.strict = False
-        self.convert_charrefs = True
-        self.text = StringIO()
-
-    def handle_data(self, d):
-        self.text.write(d)
-
-    def get_data(self):
-        return self.text.getvalue()
-
+# ========================================================
+# PURE UTILITY FUNCTIONS (stateless, safe for all users)
+# ========================================================
 
 def html_link(url: str, text: str, external: bool = True) -> str:
+    """Generate an HTML link string."""
     target = ' target="_blank" rel="noopener noreferrer"' if external else ''
     return (
         f'<a style="text-decoration: underline;" '
@@ -116,91 +85,21 @@ def html_link(url: str, text: str, external: bool = True) -> str:
     )
 
 
-def redmine_remove_tags(html):
-    s = RedmineParser()
-    s.feed(html)
-    return s.get_data()
-
-
 def check_circrna_input_regex(strg, search=re.compile(
     r'[^A-Za-z0-9_\-|:\n\t]').search):
+    """Validate that input contains only allowed characters."""
     return not bool(search(strg))
 
 
-def check_text_field_input(upload_data) -> str:
-    if not upload_data:
-        circ_list = str(ui_convert_form_values['textfield'].value)
-    else:
-        circ_list = upload_data
-
-    list_okay = check_circrna_input_regex(circ_list)
-
-    db_selected = check_if_db_is_selected(ui_convert_form_values)
-    ui_convert_form_values['circrna_found'].set_visibility(False)
-
-    if circ_list and list_okay and db_selected:
-        ui_convert_form_values['submit_button'].props(remove="disabled=true")
-        ui_convert_form_values['submit_notification'].set_text(
-            ui_update_found_circrnas(circ_list))
-
-        return "Submit " + str(
-            circ_list.count('\n')) + " circRNAs for ID conversion"
-
-    elif not circ_list:
-        ui_convert_form_values['submit_button'].props("disabled=true")
-        return "Convert circRNA IDs"
-
-    elif not list_okay:
-        ui_convert_form_values['submit_button'].props("disabled=true")
-        ui_convert_form_values['submit_notification']. \
-            set_text("Allowed characters: A-Z,\\n,\\t,|,:,-,_ ")
-        return "Unsupported characters detected in your circRNA list"
-
-    elif not db_selected:
-        ui_convert_form_values['submit_button'].props("disabled=true")
-
-        return "No Input database selected"
-
-
-def check_if_db_is_selected(form_values) -> List[Any]:
-    checklist = []
-
-    if 'db_checkboxes' in form_values:
-
-        for item in form_values['db_checkboxes']:
-            if item.value is True:
-                checklist.append(item.text)
-
-    return checklist
-
-
-def check_query_text_field() -> None:
-
-    if 'submit_query_button' in ui_convert_form_values:
-        all_good = all(
-            form['query'].value
-            for form in ui_query_forms
-        )
-
-        if all_good:
-            ui_convert_form_values['submit_query_button'].props(
-                remove="disabled=true")
-        else:
-            ui_convert_form_values['submit_query_button'].props("disabled=true")
-
-        ui_convert_form_values['submit_query_button'].update()
-
-
 def add_if_not_in_list(input_list=None, item_list=None):
+    """Add items to list if not already present, maintaining order."""
     if item_list is None:
         item_list = []
     if input_list is None:
         input_list = []
-    for item in item_list[::-1]: # go backwards through list
-        # to insert in correct order
+    for item in item_list[::-1]:
         if item not in input_list:
             input_list.insert(0, item)
-
     return input_list
 
 
@@ -208,11 +107,22 @@ def ui_generate_readable_coordinate(value: int):
     return f'{value:,}'
 
 
-def ui_generate_external_link(external_site: str, values: dict):
-    # special case for genome browser links
-    # not handled by normal external DB URL dict
-    # since we need to build the link component first
+def ui_result_table_get_coordinates(input_list=None):
+    """Get indices of coordinate columns in the field list."""
+    if input_list is None:
+        input_list = []
+    return_dict = {"Chr": "", "Start": "", "Stop": "", "Genome": ""}
+    for item in return_dict:
+        index = 0
+        for field in input_list:
+            if field == item:
+                return_dict[item] = index
+            index = index + 1
+    return return_dict
 
+
+def ui_generate_external_link(external_site: str, values: dict):
+    """Generate external link HTML for a given database field."""
     pos = values['Chr'] + ":" + \
           str(values['Start']) + "-" + \
           str(values['Stop'])
@@ -221,564 +131,44 @@ def ui_generate_external_link(external_site: str, values: dict):
     if values['Strand']:
         print_strand = " [" + values['Strand'] + "]"
 
-    print_pos = values[
-                    'Chr'] + ": " + f'{values["Start"]:,}' + " - " + f'{values["Stop"]:,}' + print_strand
+    print_pos = values['Chr'] + ": " + \
+                f'{values["Start"]:,}' + " - " + \
+                f'{values["Stop"]:,}' + print_strand
 
     if external_site == "Coordinates" and values["Coordinates"]:
-        # build pos format: chrXZY:1234-5789
         return html_link(
             util.external_db_urls["Genome-Browser"] +
             "?db=" + values["Genome"] +
             "&position=" + quote(pos, safe=''),
             print_pos)
-
     elif external_site == "CSNv1" and values["CSNv1"]:
         pos = values['Chr'] + ":" + \
               str(values['Start']) + "-" + \
               str(values['Stop'])
-
         build = values['Genome']
-
-        return f"{html_link('/', values['CSNv1'])} <a style='text-decoration: underline;' href='{util.external_db_urls["CSNv1"]}db={build}&position={pos}&hgct_customText={util.external_db_urls["CSNv1"]}{build}.bed' target='_blank'>[view exons in Genome Browser]</a>"
-
+        return (f"{html_link('/', values['CSNv1'])} "
+                f"<a style='text-decoration: underline;' "
+                f"href='{util.external_db_urls['CSNv1']}db={build}"
+                f"&position={pos}"
+                f"&hgct_customText={util.external_db_urls['CSNv1']}{build}.bed' "
+                f"target='_blank'>[view exons in Genome Browser]</a>")
     elif external_site == "Species" or external_site == "Gene" and values[external_site]:
         return f"<i>{values[external_site].replace('_', ' ')}</i>"
-
     elif values[external_site] and util.external_db_urls[external_site]:
         return html_link(
             util.external_db_urls[external_site] + quote(str(values[external_site]), safe=''),
             str(values[external_site])
         )
-
     elif values[external_site] and not util.external_db_urls[external_site]:
         return escape(str(values[external_site]))
     else:
         return ""
 
 
-def ui_result_table_get_coordinates(input_list=None):
-    if input_list is None:
-        input_list = []
-    return_dict = {"Chr": "", "Start": "", "Stop": "", "Genome": ""}
-
-    for item in return_dict:
-        index = 0
-        for field in input_list:
-            if field == item:
-                return_dict[item] = index
-            index = index + 1
-
-    return return_dict
-
-
-def ui_load_example_data() -> None:
-    ui_convert_form_values['textfield'].value = \
-        "chr1:100121447|100132793\n" \
-        "chr1:100121550|100122379\n" \
-        "chr1:100122380|100125942\n" \
-        "chr1:100123210|100125942\n" \
-        "chr1:1001237|1001530\n" \
-        "chr1:100123872|100125942\n" \
-        "chr1:100133404|100133583\n" \
-        "chr1:100136882|100137085\n" \
-        "chr1:100136882|100139711\n" \
-        "chr1:100136882|100140514\n" \
-        # "hsa-MYH9_0004\n" \
-    # "hsa-MYH9_0005\n" \
-    # "hsa-MYH10_0003\n" \
-    # "hsa-MYH10_0016\n" \
-    # "hsa-MYH10_0044\n" \
-    # "hsa-MYH10_0075\n" \
-    # "hsa-MYH10_0018\n" \
-    # "hsa-MYH10_0002\n" \
-    # "hsa-MYH14_0011\n" \
-    # "hsa-MYH14_0013\n" \
-    # "hsa-MYH14_0010\n" \
-    # "hsa-MYH9_0116"
-
-
-def ui_generate_result_table(input_id=None, output_ids=None, query_data=None):
-    # initialize empty to allow for empty results
-    output = ""
-
-    output_fields = ""
-
-    # function is called from REST API
-    if input_id and not isinstance(input_id, list):
-        circrna_list = query_data
-
-        output_fields = output_ids
-
-        output = util.run_simple_select_query(util,
-                                              output_ids,
-                                              circrna_list,
-                                              input_id
-                                              )
-
-    # REST API query gets input_id from type list
-    # in this case the list holds the constraints for SQL query
-    # construction
-    elif input_id and isinstance(input_id, list):
-
-        output_fields = output_ids
-
-        sql_query = ""
-
-        constraint_id = 0
-
-        for constraint in input_id:
-
-            if constraint_id > 0:
-                sql_query += " " + constraint.operator1 + " "
-
-            if constraint.operator2 == "LIKE":
-                tmp = constraint.query.replace("*", "", 1)
-                sql_query += constraint.field + " LIKE \"%" \
-                             + tmp + "%\" "
-            elif constraint.operator2 == "IS":
-                sql_query += constraint.field + " == \"" \
-                             + constraint.query + "\" "
-            elif constraint.operator2 == ">":
-                sql_query += constraint.field + " > \"" \
-                             + constraint.query + "\" "
-            elif constraint.operator2 == "<":
-                sql_query += constraint.field + " < \"" \
-                             + constraint.query + "\" "
-
-            constraint_id = constraint_id + 1
-        output = util.run_keyword_select_query(util,
-                                               output_fields,
-                                               sql_query)
-
-    # function called from web convert module
-    elif ui_convert_form_values['mode'] == "convert":
-
-        output_fields = check_if_db_is_selected(ui_convert_form_values)
-
-        # we always need these fields for genome browser links
-        output_fields = add_if_not_in_list(output_fields, [
-                                                            "CircRNA_ID",
-                                                            "Chr",
-                                                           "Start",
-                                                           "Stop",
-                                                           "Genome"
-                                                           ])
-
-        if "uploaded_data" in ui_convert_form_values:
-            circrna_list = ui_convert_form_values['uploaded_data'].split('\n')
-        else:
-            circrna_list = ui_convert_form_values['textfield'].value.split('\n')
-
-        output = util.run_simple_select_query(util,
-                                              output_fields,
-                                              circrna_list,
-                                              ui_convert_form_values[
-                                                  'db_checkbox'].value
-                                              )
-
-        if ui_convert_form_values['db_checkbox'].value not in output_fields \
-                and ui_convert_form_values[
-            'db_checkbox'].value != "Coordinates":
-            output_fields.insert(0, ui_convert_form_values['db_checkbox'].value)
-
-    # function called from web query module
-    elif ui_convert_form_values['mode'] == "query":
-
-        output_fields = check_if_db_is_selected(ui_convert_form_values)
-
-        # we always need these fields for genome browser links
-        output_fields = add_if_not_in_list(output_fields, [
-                                                            "CircRNA_ID",
-                                                            "Chr",
-                                                           "Start",
-                                                           "Stop",
-                                                           "Genome"
-                                                           ])
-
-        sql_query = ""
-
-        for form in ui_query_forms:
-
-            if 'operator1' in form:
-                # this is an addon condition with two operators
-                sql_query += " " + form['operator1'].value + " "
-
-            if form['operator2'].value == "LIKE":
-                tmp = form['query'].value.replace("*", "", 1)
-                sql_query += form['field'].value + " LIKE \"%" \
-                             + tmp + "%\" "
-            elif form['operator2'].value == "is":
-                sql_query += form['field'].value + " == \"" \
-                             + form['query'].value + "\" "
-            elif form['operator2'].value == ">":
-                sql_query += form['field'].value + " > \"" \
-                             + form['query'].value + "\" "
-            elif form['operator2'].value == "<":
-                sql_query += form['field'].value + " < \"" \
-                             + form['query'].value + "\" "
-
-        ui_query_forms.clear()
-
-        output = util.run_keyword_select_query(util,
-                                               output_fields,
-                                               sql_query)
-
-    full_list = list(output_fields)
-
-    processed_output = ""
-
-    # only add AG Grid structures if we are calling from web
-    if not input_id:
-
-        table_base_dict = {'defaultColDef': {
-            'filter': True,
-            'sortable': True,
-            'resizable': True,
-            'cellStyle': {'textAlign': 'left'},
-            'headerClass': 'font-bold',
-            ':onGridReady': '(params) => params.columnApi.autoSizeAllColumns()'
-        },
-
-            'columnDefs': [],
-            'rowData': []
-        }
-    # REST API call, just return a more simple JSON-compatible table
-    else:
-        table_base_dict = {'columnDefs': [],
-                           'rowData': []
-                           }
-
-    for item in full_list:
-        table_base_dict['columnDefs'].append(
-            {'headerName': item, 'field': item})
-
-        # make sure we only call this if called from web,
-        # otherwise this field is not initialized
-        if not input_id and ui_convert_form_values['mode'] == "convert":
-            processed_output = processed_output + item \
-                               + ui_convert_form_values['select2'].value
-
-    # did we actually have SQL rows returned?
-    if output:
-
-        # holds index of coordinates + genome build in field list
-        idx = ui_result_table_get_coordinates(full_list)
-
-        for line in output:
-
-            tmp_dict = dict()
-
-            zipped = zip(line, full_list)
-
-            # continue with integration of genome browser urls
-            # we have fixed genome and potentially coordinates
-            # we just have to tie all together in the special case of those
-            # fields and manually get item information from the list
-            # we probably have to add a counter to get to the correct position
-
-            for item in zipped:
-
-                if item[0] == "NA":
-                    tmp_dict[item[1]] = ""
-
-                # special case for genome browser links
-                # not handled by normal external DB URL dict
-                # since we need to build the link component first
-                elif item[1] in ["Chr", "Start", "Stop"] and not input_id:
-
-                    # build pos format: chrXZY:1234-5789
-                    pos = line[idx['Chr']] + ":" + \
-                          str(line[idx['Start']]) + \
-                          "-" + \
-                          str(line[idx['Stop']])
-
-                    build = line[idx['Genome']]
-
-                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
-                                        "\" href=\"" + util.external_db_urls[
-                                            "Genome-Browser"] \
-                                        + "db=" + build + "&" \
-                                        + "pos=" + pos + "\"" \
-                                        + " target=\"_blank\">" \
-                                        + str(item[0]) + "</a>"
-
-                elif item[1] == "CSNv1" and not input_id \
-                        and line[idx['Genome']] in ["hg38", "mm10", "rn6"]:
-                    # only if we use the new genome builds
-                    # we re-use the genome browser integration but add the
-                    # custom BED files
-
-                    # build pos format: chrXZY:1234-5789
-                    pos = line[idx['Chr']] + ":" + \
-                          str(line[idx['Start']]) + \
-                          "-" + \
-                          str(line[idx['Stop']])
-
-                    build = line[idx['Genome']]
-
-                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
-                                        "\" href=\"" + util.external_db_urls[
-                                            "Genome-Browser"] \
-                                        + "db=" + build + "&" \
-                                        + "pos=" + pos \
-                                        + "&hgct_customText=" + \
-                                        util.external_db_urls["CSNv1"] \
-                                        + build + ".bed\"" \
-                                        + " target=\"_blank\">" \
-                                        + str(item[0]) + "</a>"
-
-                elif item[1] == "CircRNA_ID" and not input_id:
-
-                    tmp_dict[item[1]] = "<a style=\"text-decoration: underline;" \
-                                "\" href=\"" + util.external_db_urls["CircRNA_ID"] \
-                                + str(item[0]) + "\" target=\"_blank\">" \
-                                + "Circhemy profile" + "</a>"
-
-                elif item[0] is not None \
-                         and util.external_db_urls[item[1]] \
-                         and not input_id:
-                    tmp_dict[item[1]] = html_link(
-                        util.external_db_urls[item[1]] + quote(str(item[0]), safe=''),
-                        str(item[0])
-                    )
-                else:
-                    tmp_dict[item[1]] = item[0]
-
-            table_base_dict['rowData'].append(tmp_dict)
-
-        # remove last sep character
-        processed_output = processed_output[:-1]
-
-        # add new line for correct line break
-        processed_output = processed_output + "\n"
-
-        # form_values['table2'].style("height: 900px")
-
-    # only set up web table if we are calling from web
-    if not input_id:
-
-        table = ui.aggrid(table_base_dict,
-                          html_columns=list(range(len(full_list))))
-
-        # table.style("width: 90%")
-        # table.style("height: 90%")
-        # table.style(add="text-align:center; "
-        #             "margin-left:auto; "
-        #             "margin-right:auto; ")
-        table.style(add='height: calc(100vh - 220px)')
-        table.props("domLayout='autoHeight'")
-        table.on('firstDataRendered',
-                 lambda: table.run_grid_method('autoSizeAllColumns'))
-        # table.classes("ag-theme-balham")
-        # table.classes("ag-theme-alpine")
-        # table.style(add=(
-        #     'height: calc(100vh - 220px); '
-        #     'width: 100%; '
-        #     '--ag-font-family: Inter, Arial, sans-serif; '
-        #     '--ag-font-size: 13px; '
-        #     '--ag-row-height: 36px; '
-        #     '--ag-header-height: 40px; '
-        #     '--ag-background-color: #ffffff; '
-        #     '--ag-header-background-color: #eef5ff; '
-        #     '--ag-header-foreground-color: #1f3b64; '
-        #     '--ag-foreground-color: #1f2937; '
-        #     '--ag-odd-row-background-color: #f8fbff; '
-        #     '--ag-border-color: #d4e2f5; '
-        #     '--ag-row-hover-color: #e9f3ff; '
-        #     '--ag-selected-row-background-color: #cfe3ff; '
-        # ))
-        table.update()
-
-        if ui_convert_form_values['mode'] == "convert":
-
-            processed_output = processed_output \
-                               + util.process_sql_output(output,
-                                                         seperator=
-                                                         ui_convert_form_values[
-                                                             'select2'].value,
-                                                         empty_char=
-                                                         ui_convert_form_values[
-                                                             'select3'].value)
-        else:
-            processed_output = processed_output \
-                               + util.process_sql_output(output)
-
-        # web return is the output and the nicegui table object
-        return processed_output, table
-    else:
-        # return is the output and a simple table dictionary
-        return processed_output, table_base_dict
-
-
-def ui_update_found_circrnas(data) -> str:
-    circrna_list = data.split('\n')
-    circrna_list = list(filter(None, circrna_list))
-
-    ratio, found = util.check_input_return_found_circ_number(util, input_field=
-    ui_convert_form_values['db_checkbox'].value, query_data=circrna_list)
-
-    if found > 0:
-        ui_convert_form_values['circrna_found'].value = ratio
-        ui_convert_form_values['circrna_found'].set_visibility(True)
-    else:
-        ui_convert_form_values['circrna_found'].value = ratio
-        ui_convert_form_values['submit_button'].props("disabled=true")
-
-    return str(found) + " of " + str(len(circrna_list)) + " CircRNA IDs found"
-
-
-def ui_file_upload_handler(file) -> None:
-    data = file.content.decode('UTF-8')
-    check_text_field_input(data)
-    ui_convert_form_values['uploaded_data'] = data
-
-
-def ui_layout_add_left_drawer(convert=False) -> None:
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4;').props('width=390').classes(
-        'q-py-none').classes('q-my-none'):
-
-        with ui.column().classes('q-py-none').classes('q-my-none'):
-
-            ui_layout_generate_logo()
-
-        with ui.column().classes('q-py-none').classes('q-my-none'):
-
-            if convert:
-                ui.label('Step 1: select input ID type:').style(
-                    "text-decoration: underline;")
-
-                # Manually adding Coordinates here, as it's not a real DB field
-                ui_convert_form_values['db_checkbox'] = ui.select(
-                    ["Coordinates"] + util.select_db_columns,
-                    value="Coordinates",
-                    label="ID format").style("width: 320px")
-
-                with ui.column().classes('q-py-none').classes('q-my-none'):
-                    ui.label('Step 2: select output fields:').style(
-                        "text-decoration: underline;")
-
-                    # ui.label("Genomic Coordinates")
-                    # with ui.row():
-                    #     tmp = [ui.checkbox('Chr', value=True),
-                    #            ui.checkbox('Start', value=True),
-                    #            ui.checkbox('Stop', value=True)]
-
-                    db_entries = []
-                    ui.label("CircRNA databases & external IDs")
-
-                    with ui.row().classes('q-py-none'):
-                        with ui.column():
-                            for item in range(
-                                    int(len(util.select_db_columns) / 3)):
-                                db_entries.append(
-                                    ui.checkbox(util.select_db_columns[item],
-                                                value=util.active_db_columns[
-                                                    util.select_db_columns[
-                                                        item]]).props(
-                                        'size=xs'))
-
-                        with ui.column():
-                            for item in range(
-                                    int(len(util.select_db_columns) / 3),
-                                    int((len(util.select_db_columns) / 3) * 2)):
-                                db_entries.append(
-                                    ui.checkbox(util.select_db_columns[item],
-                                                value=util.active_db_columns[
-                                                    util.select_db_columns[
-                                                        item]]).props(
-                                        'size=xs'))
-
-                        with ui.column():
-                            for item in range(
-                                    int((len(util.select_db_columns) / 3) * 2),
-                                    len(util.select_db_columns)):
-                                db_entries.append(
-                                    ui.checkbox(util.select_db_columns[item],
-                                                value=util.active_db_columns[
-                                                    util.select_db_columns[
-                                                        item]]).props(
-                                        'size=xs'))
-
-                    checkbox_list = db_entries
-                    ui_convert_form_values['db_checkboxes'] = checkbox_list
-
-                with ui.column():
-                    ui.label('Step 3: select output format:').style(
-                        "text-decoration: underline;")
-
-                    ui_convert_form_values['select2'] = ui.select(
-                        {"\t": "Tab-delimited '\\t'",
-                         ",": "Comma-delimited ','",
-                         ";": "Semicolon-delimited ';'"},
-                        value="\t",
-                        label="Separator character") \
-                        .style("width: 320px")
-
-                    ui_convert_form_values['select3'] = ui.select({"NA": "NA",
-                                                                   "\t": "Tab [\\t]",
-                                                                   "": "Don't print anything"},
-                                                                  value="NA",
-                                                                  label="Placeholder"
-                                                                        " for unavailable "
-                                                                        "fields") \
-                        .style("width: 320px")
-
-            else:
-                with ui.column().classes('q-py-none').classes('q-my-none'):
-                    ui.label('Select output fields:').style(
-                        "text-decoration: underline;")
-
-                    # ui.label("Genomic Coordinates")
-                    # with ui.row():
-                    #     tmp = [ui.checkbox('Chr', value=True),
-                    #            ui.checkbox('Start', value=True),
-                    #            ui.checkbox('Stop', value=True)]
-
-                    db_entries = []
-                    ui.label("CircRNA databases & external IDs")
-
-                    with ui.row().classes('q-py-none'):
-                        with ui.column():
-                            for item in range(
-                                    int(len(util.select_db_columns) / 3)):
-                                db_entries.append(
-                                    ui.checkbox(util.select_db_columns[item],
-                                                value=util.active_db_columns[
-                                                    util.select_db_columns[
-                                                        item]]).props(
-                                        'size=xs'))
-
-                        with ui.column():
-                            for item in range(
-                                    int(len(util.select_db_columns) / 3),
-                                    int((len(util.select_db_columns) / 3) * 2)):
-                                db_entries.append(
-                                    ui.checkbox(util.select_db_columns[item],
-                                                value=util.active_db_columns[
-                                                    util.select_db_columns[
-                                                        item]]).props(
-                                        'size=xs'))
-
-                        with ui.column():
-                            for item in range(
-                                    int((len(util.select_db_columns) / 3) * 2),
-                                    len(util.select_db_columns)):
-                                db_entries.append(
-                                    ui.checkbox(util.select_db_columns[item],
-                                                value=util.active_db_columns[
-                                                    util.select_db_columns[
-                                                        item]]).props(
-                                        'size=xs'))
-
-                    checkbox_list = db_entries
-                    ui_convert_form_values['db_checkboxes'] = checkbox_list
-
-
 def ui_layout_circrna_header_meta(input_dict, circrna_id):
-
+    """Generate meta description for a circRNA profile page."""
     if 'CSNv1' in input_dict and input_dict['CSNv1'] is not None:
-        csnv1 = ", "+input_dict['CSNv1']
+        csnv1 = ", " + input_dict['CSNv1']
     else:
         csnv1 = ""
 
@@ -795,23 +185,28 @@ def ui_layout_circrna_header_meta(input_dict, circrna_id):
     meta_string = ("CircRNA " + circrna_id + csnv1 +
                    ", " + pos + " (" + build + ")" + gene +
                    " in circhemy, the circRNA ID database")
-
     return meta_string
 
 
+# ========================================================
+# SHARED UI LAYOUT FUNCTIONS (create UI elements per-call,
+# read only from module-level constants)
+# ========================================================
+
 def ui_layout_add_head_html(input_dict=None, circrna_id=None) -> None:
-
+    """Add HTML head elements including meta tags and styles."""
     if input_dict:
-
-        ui.add_head_html("<meta name=\"description\" content=\" "+
-                         ui_layout_circrna_header_meta(input_dict, circrna_id)
-                         +" \"/>")
-
+        ui.add_head_html(
+            "<meta name=\"description\" content=\" " +
+            ui_layout_circrna_header_meta(input_dict, circrna_id) +
+            " \"/>")
     else:
-        ui.add_head_html("<meta name=\"description\"  content=\"Circhemy is an "
-                         "easy-to-use web service and command line tool helping"
-                         " researchers to convert between different"
-                         " circular RNA ID formats.\"/>")
+        ui.add_head_html(
+            "<meta name=\"description\" content=\"Circhemy is an "
+            "easy-to-use web service and command line tool helping"
+            " researchers to convert between different"
+            " circular RNA ID formats.\"/>")
+
     ui.add_head_html(
         (Path(__file__).parent / 'static' / 'header.html').read_text())
     ui.add_head_html(
@@ -821,20 +216,12 @@ def ui_layout_add_head_html(input_dict=None, circrna_id=None) -> None:
 
 
 def ui_layout_generate_logo() -> None:
-    # program name as link
-    # ui.html(util.program_name).style(
-    #     'text-align: center; font-size: 22pt;').style("width: 320px").classes(
-    #     'q-py-none')
-
-    # ui.html("<img  class=\"center\" src='/static/logo_small.png' width='100px'/>").style(
-    #     "width: 340px").classes('q-py-none')
-
-    ui.image('/static/logo_small_2.png').classes('w-[320px]').tooltip("al·che·my - noun - The medieval forerunner of chemistry, "
-            "based on the supposed transformation of matter. "
-            "\"A seemingly magical process of transformation, "
-            "creation, or combination.\"")
-
-    # subtitle
+    """Generate the circhemy logo and subtitle."""
+    ui.image('/static/logo_small_2.png').classes('w-[320px]').tooltip(
+        "al·che·my - noun - The medieval forerunner of chemistry, "
+        "based on the supposed transformation of matter. "
+        "\"A seemingly magical process of transformation, "
+        "creation, or combination.\"")
     ui.html("<i>circhemy</i> - the alchemy of<br/>circular RNA ID conversion"). \
         tooltip('...are shown on mouse over').style(
         'text-align: center; font-size: 16pt;').style("width: 320px").classes(
@@ -842,6 +229,7 @@ def ui_layout_generate_logo() -> None:
 
 
 def ui_layout_add_header() -> None:
+    """Generate the top navigation header bar."""
     menu_items = {
         'What\'s new?': '/news',
         'CircRNA ID conversion': '/',
@@ -850,10 +238,10 @@ def ui_layout_add_header() -> None:
         'REST API access': '/rest',
         'About': '/about'
     }
+
     with ui.header().style("height: 40px").classes('q-pa-xs') \
             .classes('items-center duration-400 p-0 px-4 no-wrap') \
             .style('box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)'):
-
         with ui.row().classes('lg:hidden'):
             with ui.menu().classes('bg-primary text-white text-lg') as menu:
                 for title, target in menu_items.items():
@@ -868,30 +256,16 @@ def ui_layout_add_header() -> None:
             svg.github().classes('fill-white scale-125 m-1')
 
 
-def ensure_database_stats_loaded() -> None:
-    if 'chart' not in ui_convert_form_values or 'chart2' not in ui_convert_form_values:
-        ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
-            ui_convert_form_values['chart2'] = util.database_stats(util)
-
-
 def ui_layout_add_footer_and_right_drawer() -> None:
-    ensure_database_stats_loaded()
-
+    """Add the right drawer with stats and the footer.
+    Uses module-level read-only chart data — safe for all users."""
     with ui.right_drawer(fixed=False).style('background-color: #ebf1fa'):
         ui.label('Database Version ' + util.database_version + ' statistics')
         ui.label('')
-
-
         ui.label('Database by species/genome')
-
-        chart = ui.highchart(ui_convert_form_values['chart']).classes(
-            'w-full h-64') \
-            .style("height: 330px")
-
+        ui.highchart(_chart_data).classes('w-full h-64').style("height: 330px")
         ui.label('Database by CircRNA ID')
-        chart2 = ui.highchart(ui_convert_form_values['chart2']).classes(
-            'w-full h-64') \
-            .style("height: 330px")
+        ui.highchart(_chart2_data).classes('w-full h-64').style("height: 330px")
 
     with ui.footer().style('background-color: #3874c8').style(
             "height: 30px").classes('q-pa-xs'):
@@ -902,224 +276,728 @@ def ui_layout_add_footer_and_right_drawer() -> None:
         ui.link(' | © 2024 Jakobi Lab', 'https://jakobilab.org')
 
 
-def ui_query_remove_conditions(container) -> None:
-    if len(ui_query_forms) > 1:
-        container.remove(-1)
-        del ui_query_forms[-1]
+def build_result_table_for_web(output_fields, output, mode,
+                               separator='\t', empty_char='NA'):
+    """Build an AG Grid table for the web UI.
+
+    This is a pure function — all data is passed explicitly.
+    No global state is read or written.
+
+    Args:
+        output_fields: List of column names to display.
+        output: SQL query result rows.
+        mode: 'convert' or 'query'.
+        separator: Character to separate fields in download output.
+        empty_char: Placeholder for missing values in download output.
+
+    Returns:
+        Tuple of (processed_output_string, aggrid_table_element).
+    """
+    full_list = list(output_fields)
+    processed_output = ""
+
+    table_base_dict = {
+        'defaultColDef': {
+            'filter': True,
+            'sortable': True,
+            'resizable': True,
+            'cellStyle': {'textAlign': 'left'},
+            'headerClass': 'font-bold',
+        },
+        'columnDefs': [],
+        'rowData': []
+    }
+
+    for item in full_list:
+        table_base_dict['columnDefs'].append(
+            {'headerName': item, 'field': item})
+        if mode == "convert":
+            processed_output = processed_output + item + separator
+
+    if output:
+        idx = ui_result_table_get_coordinates(full_list)
+
+        for line in output:
+            tmp_dict = dict()
+            zipped = zip(line, full_list)
+
+            for item in zipped:
+                if item[0] == "NA":
+                    tmp_dict[item[1]] = ""
+                elif item[1] in ["Chr", "Start", "Stop"]:
+                    pos = (str(line[idx['Chr']]) + ":" +
+                           str(line[idx['Start']]) + "-" +
+                           str(line[idx['Stop']]))
+                    build = line[idx['Genome']]
+                    tmp_dict[item[1]] = (
+                        f'<a style="text-decoration: underline;" '
+                        f'href="{util.external_db_urls["Genome-Browser"]}'
+                        f'db={build}&pos={pos}" '
+                        f'target="_blank">{item[0]}</a>')
+                elif item[1] == "CSNv1" and line[idx['Genome']] in ["hg38", "mm10", "rn6"]:
+                    pos = (str(line[idx['Chr']]) + ":" +
+                           str(line[idx['Start']]) + "-" +
+                           str(line[idx['Stop']]))
+                    build = line[idx['Genome']]
+                    tmp_dict[item[1]] = (
+                        f'<a style="text-decoration: underline;" '
+                        f'href="{util.external_db_urls["Genome-Browser"]}'
+                        f'db={build}&pos={pos}'
+                        f'&hgct_customText={util.external_db_urls["CSNv1"]}'
+                        f'{build}.bed" target="_blank">{item[0]}</a>')
+                elif item[1] == "CircRNA_ID":
+                    tmp_dict[item[1]] = (
+                        f'<a style="text-decoration: underline;" '
+                        f'href="{util.external_db_urls["CircRNA_ID"]}'
+                        f'{item[0]}" target="_blank">Circhemy profile</a>')
+                elif (item[0] is not None and
+                      util.external_db_urls.get(item[1])):
+                    tmp_dict[item[1]] = html_link(
+                        util.external_db_urls[item[1]] + quote(str(item[0]), safe=''),
+                        str(item[0]))
+                else:
+                    tmp_dict[item[1]] = item[0]
+
+            table_base_dict['rowData'].append(tmp_dict)
+
+        # Remove last separator character and add newline
+        processed_output = processed_output[:-1] + "\n"
+
+    # Create the AG Grid UI element with html_columns support [8]
+    table = ui.aggrid(
+        table_base_dict,
+        html_columns=list(range(len(full_list)))
+    )
+    table.style(add='height: calc(100vh - 220px)')
+    table.props("domLayout='autoHeight'")
+    table.on('firstDataRendered',
+             lambda: table.run_grid_method('autoSizeAllColumns'))
+    table.update()
+
+    # Build downloadable text output
+    if mode == "convert":
+        processed_output = processed_output + util.process_sql_output(
+            output, seperator=separator, empty_char=empty_char)
+    else:
+        processed_output = processed_output + util.process_sql_output(output)
+
+    return processed_output, table
 
 
-def ui_query_add_conditions(container, new=False) -> None:
-    query_values = dict()
+def build_result_table_for_api(input_id, output_ids, query_data=None):
+    """Build a result table for REST API calls.
 
-    with container:
-        with ui.row():
-            if new:
-                query_values['operator1'] = ui.select(["AND", "OR", "AND NOT"],
-                                                      value="AND",
-                                                      label="Query operator").style(
-                    "width: 150px")
+    Pure function — no global state accessed.
 
-            query_values['field'] = ui.select(
-                util.db_columns,
-                value="circBase",
-                label="Database field").style("width: 130px")
+    Args:
+        input_id: Input field name (str) or list of ConstraintModel for query.
+        output_ids: List of output field names.
+        query_data: List of circRNA IDs (for convert mode).
 
-            query_values['operator2'] = ui.select(["is", "LIKE", ">", "<"],
-                                                  value="LIKE",
-                                                  label="Query operator").style(
-                "width: 130px")
+    Returns:
+        Tuple of (processed_output_string, table_dict).
+    """
+    output_fields = output_ids
 
-            query_values['query'] = ui.input(label='Enter search term',
-                                             placeholder='start typing',
-                                             on_change=lambda e:
-                                             check_query_text_field())
+    if not isinstance(input_id, list):
+        # Convert mode API call
+        output = util.run_simple_select_query(
+            util, output_ids, query_data, input_id)
+    else:
+        # Query mode API call
+        sql_query = ""
+        constraint_id = 0
+        for constraint in input_id:
+            if constraint_id > 0:
+                sql_query += " " + constraint.operator1 + " "
+            if constraint.operator2 == "LIKE":
+                tmp = constraint.query.replace("*", "", 1)
+                sql_query += constraint.field + ' LIKE "%' + tmp + '%" '
+            elif constraint.operator2 == "IS":
+                sql_query += constraint.field + ' == "' + constraint.query + '" '
+            elif constraint.operator2 == ">":
+                sql_query += constraint.field + ' > "' + constraint.query + '" '
+            elif constraint.operator2 == "<":
+                sql_query += constraint.field + ' < "' + constraint.query + '" '
+            constraint_id += 1
 
-    ui_query_forms.append(query_values)
+        output = util.run_keyword_select_query(util, output_fields, sql_query)
+
+    full_list = list(output_fields)
+    processed_output = ""
+
+    table_base_dict = {'columnDefs': [], 'rowData': []}
+
+    for item in full_list:
+        table_base_dict['columnDefs'].append(
+            {'headerName': item, 'field': item})
+
+    if output:
+        for line in output:
+            tmp_dict = dict()
+            zipped = zip(line, full_list)
+            for item in zipped:
+                tmp_dict[item[1]] = item[0]
+            table_base_dict['rowData'].append(tmp_dict)
+
+    return processed_output, table_base_dict
 
 
-# application logic pages
-
-# main landing page / also works as start page for converter function
+# ========================================================
+# APPLICATION PAGES — ALL STATE IS LOCAL PER-VISIT
+# ========================================================
 
 @ui.page('/')
 async def page_application_convert():
+    """Main landing page / circRNA ID conversion form.
+
+    All mutable state is local to this function call.
+    Each visitor gets their own isolated state."""
+
+    # Must await connection BEFORE accessing app.storage.tab
+    await ui.context.client.connected()
+
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    with ui.card().style('width: 100%;') as card:
+    # ---- Per-visit local state (replaces global ui_convert_form_values) ----
+    page_state = {
+        'mode': 'convert',
+        'textfield': None,
+        'db_checkbox': None,
+        'db_checkboxes': [],
+        'select2': None,
+        'select3': None,
+        'submit_button': None,
+        'submit_notification': None,
+        'circrna_found': None,
+        'uploaded_data': None,
+    }
+
+    # ---- Closures that capture page_state ----
+
+    def check_if_db_is_selected_local() -> List[Any]:
+        """Return list of selected output database checkbox labels."""
+        checklist = []
+        for item in page_state['db_checkboxes']:
+            if item.value is True:
+                checklist.append(item.text)
+        return checklist
+
+    def ui_update_found_circrnas_local(data: str) -> str:
+        """Update progress indicator with found circRNA count."""
+        circrna_list = data.split('\n')
+        circrna_list = list(filter(None, circrna_list))
+        ratio, found = util.check_input_return_found_circ_number(
+            util,
+            input_field=page_state['db_checkbox'].value,
+            query_data=circrna_list
+        )
+        if found > 0:
+            page_state['circrna_found'].value = ratio
+            page_state['circrna_found'].set_visibility(True)
+        else:
+            page_state['circrna_found'].value = ratio
+            page_state['submit_button'].props("disabled=true")
+        return f"{found} of {len(circrna_list)} CircRNA IDs found"
+
+    def check_text_field_input_local(upload_data=None) -> str:
+        """Validate input and update UI elements accordingly."""
+        if not upload_data:
+            circ_list = str(page_state['textfield'].value)
+        else:
+            circ_list = upload_data
+
+        list_okay = check_circrna_input_regex(circ_list)
+        db_selected = check_if_db_is_selected_local()
+        page_state['circrna_found'].set_visibility(False)
+
+        if circ_list and list_okay and db_selected:
+            page_state['submit_button'].props(remove="disabled=true")
+            page_state['submit_notification'].set_text(
+                ui_update_found_circrnas_local(circ_list))
+            return ("Submit " + str(circ_list.count('\n')) +
+                    " circRNAs for ID conversion")
+        elif not circ_list:
+            page_state['submit_button'].props("disabled=true")
+            return "Convert circRNA IDs"
+        elif not list_okay:
+            page_state['submit_button'].props("disabled=true")
+            page_state['submit_notification'].set_text(
+                "Allowed characters: A-Z,\\n,\\t,|,:,-,_ ")
+            return "Unsupported characters detected in your circRNA list"
+        elif not db_selected:
+            page_state['submit_button'].props("disabled=true")
+            return "No Input database selected"
+
+    def handle_file_upload(file) -> None:
+        """Handle uploaded file content."""
+        data = file.content.decode('UTF-8')
+        check_text_field_input_local(data)
+        page_state['uploaded_data'] = data
+
+    def load_example_data() -> None:
+        """Load example circRNA data into the text field."""
+        page_state['textfield'].value = (
+            "chr1:100121447|100132793\n"
+            "chr1:100121550|100122379\n"
+            "chr1:100122380|100125942\n"
+            "chr1:100123210|100125942\n"
+            "chr1:1001237|1001530\n"
+            "chr1:100123872|100125942\n"
+            "chr1:100133404|100133583\n"
+            "chr1:100136882|100137085\n"
+            "chr1:100136882|100139711\n"
+            "chr1:100136882|100140514\n"
+        )
+
+    def handle_submit() -> None:
+        """Serialize local state into app.storage.tab, then navigate to results."""
+        app.storage.tab['convert_state'] = {
+            'mode': 'convert',
+            'textfield_value': page_state['textfield'].value or '',
+            'uploaded_data': page_state.get('uploaded_data'),
+            'db_checkbox_value': page_state['db_checkbox'].value,
+            'db_checkboxes_selected': check_if_db_is_selected_local(),
+            'select2_value': page_state['select2'].value,
+            'select3_value': page_state['select3'].value,
+        }
+        ui.navigate.to('/results')
+
+
+    # ---- Build the UI ----
+
+    with ui.card().style('width: 100%;'):
         ui.html("<strong>CircRNA ID conversion made easy</strong>")
         with ui.card_section():
             ui.markdown("""
-Multiple databases gathered hundreds of thousands of circRNAs, however, most 
-databases employ their own naming scheme, making it harder and harder to keep 
+Multiple databases gathered hundreds of thousands of circRNAs, however, most
+databases employ their own naming scheme, making it harder and harder to keep
 track of known circRNAs and their identifiers.
-        """)
+            """)
 
-    ui_convert_form_values['mode'] = "convert"
-
-    # ui.image('https://imgs.xkcd.com/comics/standards.png')
-
-    ui_convert_form_values['textfield'] = ui.input(
+    page_state['textfield'] = ui.input(
         label='Please paste a list of circRNA IDs, one per line:',
         placeholder='start typing',
-        on_change=lambda e: ui_convert_form_values['submit_button'].
-        set_text(check_text_field_input(upload_data=None))). \
-        props('type=textarea rows=18').style(
+        on_change=lambda e: page_state['submit_button'].set_text(
+            check_text_field_input_local(upload_data=None))
+    ).props('type=textarea rows=18').style(
         "width: 100%; background-color: #ffffff;").classes('q-pa-md')
 
-    ui_convert_form_values['or'] = ui.label('- OR -')
+    ui.label('- OR -')
 
-    ui_convert_form_values['upload'] = ui.upload(
+    ui.upload(
         label="1) Click + to select file "
               "2) upload file via button to the right "
               "3) press 'convert circRNA IDs' button",
-        on_upload=lambda e: ui_file_upload_handler(e.files[0])).style(
-        "width: 100%")
+        on_upload=lambda e: handle_file_upload(e.files[0])
+    ).style("width: 100%")
 
     with ui.row():
-        ui_convert_form_values['submit_button'] = \
-            ui.button('Convert circRNA IDs', on_click=lambda:
-            ui.navigate.to('/results')).props("disabled=true")
+        page_state['submit_button'] = ui.button(
+            'Convert circRNA IDs',
+            on_click=handle_submit
+        ).props("disabled=true")
+        ui.button('Load example data', on_click=load_example_data)
 
-        ui_convert_form_values['example_button'] = \
-            ui.button('Load example data', on_click=lambda:
-            ui_load_example_data())
+    page_state['circrna_found'] = ui.linear_progress(
+        show_value=False, value=0).style("width: 60%;")
+    page_state['circrna_found'].set_visibility(False)
+    page_state['submit_notification'] = ui.label('')
 
-    ui_convert_form_values['circrna_found'] = ui.linear_progress(
-        show_value=False,
-        value=0).style(
-        "width: 60%; ")
+    # ---- Left drawer with convert options (local to this page) ----
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
 
-    ui_convert_form_values['circrna_found'].set_visibility(False)
-    ui_convert_form_values['submit_notification'] = ui.label('')
+        with ui.column().classes('q-py-none').classes('q-my-none'):
+            ui_layout_generate_logo()
 
-    ####################
+        with ui.column().classes('q-py-none').classes('q-my-none'):
+            ui.label('Step 1: select input ID type:').style(
+                "text-decoration: underline;")
+            page_state['db_checkbox'] = ui.select(
+                ["Coordinates"] + util.select_db_columns,
+                value="Coordinates",
+                label="ID format").style("width: 320px")
 
-    ui_layout_add_left_drawer(convert=True)
+            with ui.column().classes('q-py-none').classes('q-my-none'):
+                ui.label('Step 2: select output fields:').style(
+                    "text-decoration: underline;")
+
+                db_entries = []
+                ui.label("CircRNA databases & external IDs")
+                third = len(util.select_db_columns) // 3
+                two_thirds = (len(util.select_db_columns) * 2) // 3
+
+                with ui.row().classes('q-py-none'):
+                    with ui.column():
+                        for item in range(third):
+                            db_entries.append(
+                                ui.checkbox(
+                                    util.select_db_columns[item],
+                                    value=util.active_db_columns[
+                                        util.select_db_columns[item]]
+                                ).props('size=xs'))
+                    with ui.column():
+                        for item in range(third, two_thirds):
+                            db_entries.append(
+                                ui.checkbox(
+                                    util.select_db_columns[item],
+                                    value=util.active_db_columns[
+                                        util.select_db_columns[item]]
+                                ).props('size=xs'))
+                    with ui.column():
+                        for item in range(two_thirds, len(util.select_db_columns)):
+                            db_entries.append(
+                                ui.checkbox(
+                                    util.select_db_columns[item],
+                                    value=util.active_db_columns[
+                                        util.select_db_columns[item]]
+                                ).props('size=xs'))
+
+                page_state['db_checkboxes'] = db_entries
+
+            with ui.column():
+                ui.label('Step 3: select output format:').style(
+                    "text-decoration: underline;")
+                page_state['select2'] = ui.select(
+                    {"\t": "Tab-delimited '\\t'",
+                     ",": "Comma-delimited ','",
+                     ";": "Semicolon-delimited ';'"},
+                    value="\t",
+                    label="Separator character").style("width: 320px")
+                page_state['select3'] = ui.select(
+                    {"NA": "NA",
+                     "\t": "Tab [\\t]",
+                     "": "Don't print anything"},
+                    value="NA",
+                    label="Placeholder for unavailable fields"
+                ).style("width: 320px")
 
     ui_layout_add_footer_and_right_drawer()
 
 
-# main landing page / also works as start page for converter function
 @ui.page('/query')
 async def page_application_query():
+    """Query page for browsing databases.
+
+    All mutable state is local to this function call.
+    Each visitor gets their own isolated query form state."""
+
+    # Must await connection BEFORE accessing app.storage.tab
+    await ui.context.client.connected()
+
     ui_layout_add_head_html()
     ui_layout_add_header()
 
-    # clear out forms for before form load
-    ui_convert_form_values.clear()
-    ui_query_forms.clear()
+    # ---- Per-visit local state ----
+    page_state = {
+        'mode': 'query',
+        'db_checkboxes': [],
+        'query_forms': [],  # Replaces the old global ui_query_forms
+        'submit_query_button': None,
+    }
 
-    ui_convert_form_values['mode'] = "query"
+    # ---- Closures ----
 
-    ui_convert_form_values['db_checkboxes'] = []
+    def check_query_text_field_local() -> None:
+        """Enable/disable submit button based on query field completeness."""
+        if page_state['submit_query_button'] is None:
+            return
 
-    ui_convert_form_values['chart'], ui_convert_form_values['dbsize'], \
-    ui_convert_form_values[
-        'chart2'] = util.database_stats(util)
+        all_good = all(
+            form['query'].value
+            for form in page_state['query_forms']
+        )
 
-    ui_query_add_conditions(ui.column(), new=False)
+        if all_good:
+            page_state['submit_query_button'].props(remove="disabled=true")
+        else:
+            page_state['submit_query_button'].props("disabled=true")
+
+        page_state['submit_query_button'].update()
+
+    def add_conditions_local(container, new=False) -> None:
+        """Add a new row of query condition inputs to the form."""
+        query_values = dict()
+
+        with container:
+            with ui.row():
+                if new:
+                    query_values['operator1'] = ui.select(
+                        ["AND", "OR", "AND NOT"],
+                        value="AND",
+                        label="Query operator"
+                    ).style("width: 150px")
+
+                query_values['field'] = ui.select(
+                    util.db_columns,
+                    value="circBase",
+                    label="Database field"
+                ).style("width: 130px")
+
+                query_values['operator2'] = ui.select(
+                    ["is", "LIKE", ">", "<"],
+                    value="LIKE",
+                    label="Query operator"
+                ).style("width: 130px")
+
+                query_values['query'] = ui.input(
+                    label='Enter search term',
+                    placeholder='start typing',
+                    on_change=lambda e: check_query_text_field_local()
+                )
+
+        page_state['query_forms'].append(query_values)
+
+    def remove_conditions_local(container) -> None:
+        """Remove the last added query condition from the form."""
+        if len(page_state['query_forms']) > 1:
+            container.remove(-1)
+            del page_state['query_forms'][-1]
+
+    def check_if_db_is_selected_local() -> list:
+        """Return list of selected database checkbox labels."""
+        checklist = []
+        for item in page_state['db_checkboxes']:
+            if item.value is True:
+                checklist.append(item.text)
+        return checklist
+
+    def handle_query_submit() -> None:
+        """Serialize query form data into per-tab storage and navigate."""
+        constraints = []
+        for form in page_state['query_forms']:
+            constraint = {
+                'field': form['field'].value,
+                'operator2': form['operator2'].value,
+                'query': form['query'].value,
+            }
+            if 'operator1' in form:
+                constraint['operator1'] = form['operator1'].value
+            constraints.append(constraint)
+
+        app.storage.tab['convert_state'] = {
+            'mode': 'query',
+            'constraints': constraints,
+            'db_checkboxes_selected': check_if_db_is_selected_local(),
+        }
+        ui.navigate.to('/results')
+
+    # ---- Build the UI ----
+
+    initial_container = ui.column()
+    add_conditions_local(initial_container, new=False)
 
     condition_row = ui.column()
 
     with ui.row():
-        ui_convert_form_values['submit_query_button'] = \
-            ui.button('Submit query', on_click=lambda:
-            ui.navigate.to('/results')).props("disabled=false")
+        page_state['submit_query_button'] = ui.button(
+            'Submit query',
+            on_click=handle_query_submit
+        ).props("disabled=false")
 
-        ui_convert_form_values['add_condition_button'] = \
-            ui.button('Add condition', on_click=lambda:
-            ui_query_add_conditions(condition_row, new=True))
+        ui.button(
+            'Add condition',
+            on_click=lambda: add_conditions_local(condition_row, new=True)
+        )
 
-        ui_convert_form_values['remove_condition_button'] = \
-            ui.button('Remove condition', on_click=lambda:
-            ui_query_remove_conditions(condition_row))
+        ui.button(
+            'Remove condition',
+            on_click=lambda: remove_conditions_local(condition_row)
+        )
 
-    ui_convert_form_values['circrna_found'] = ui.linear_progress(
-        show_value=False, value=0).style("width: 60%; ")
+    circrna_found = ui.linear_progress(
+        show_value=False, value=0).style("width: 60%;")
+    circrna_found.set_visibility(False)
 
-    ui_convert_form_values['circrna_found'].set_visibility(False)
+    # ---- Left drawer with output field checkboxes ----
+    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
+            'background-color: #d7e3f4;').props('width=390').classes(
+        'q-py-none').classes('q-my-none'):
 
-    ####################
+        with ui.column().classes('q-py-none').classes('q-my-none'):
+            ui_layout_generate_logo()
 
-    # ui_convert_form_values['db_checkboxes'] =
+        with ui.column().classes('q-py-none').classes('q-my-none'):
+            ui.label('Select output fields:').style(
+                "text-decoration: underline;")
 
-    ui_layout_add_left_drawer()
+            db_entries = []
+            ui.label("CircRNA databases & external IDs")
+            third = len(util.select_db_columns) // 3
+            two_thirds = (len(util.select_db_columns) * 2) // 3
+
+            with ui.row().classes('q-py-none'):
+                with ui.column():
+                    for item in range(third):
+                        db_entries.append(
+                            ui.checkbox(
+                                util.select_db_columns[item],
+                                value=util.active_db_columns[
+                                    util.select_db_columns[item]]
+                            ).props('size=xs'))
+                with ui.column():
+                    for item in range(third, two_thirds):
+                        db_entries.append(
+                            ui.checkbox(
+                                util.select_db_columns[item],
+                                value=util.active_db_columns[
+                                    util.select_db_columns[item]]
+                            ).props('size=xs'))
+                with ui.column():
+                    for item in range(two_thirds, len(util.select_db_columns)):
+                        db_entries.append(
+                            ui.checkbox(
+                                util.select_db_columns[item],
+                                value=util.active_db_columns[
+                                    util.select_db_columns[item]]
+                            ).props('size=xs'))
+
+            page_state['db_checkboxes'] = db_entries
 
     ui_layout_add_footer_and_right_drawer()
 
 
 @ui.page('/results')
 async def page_application_display_results():
+    # Must await connection BEFORE accessing app.storage.tab
+    await ui.context.client.connected()
+
     ui_layout_add_head_html()
     ui_layout_add_header()
 
     session_id = str(uuid4())
 
-    # this just makes sure we built the landing page first
-    if 'mode' in ui_convert_form_values:
+    # Read from per-tab storage instead of per-user storage
+    user_state = app.storage.tab.get('convert_state', None)
 
-        processed_output, ui_convert_form_values[
-            'table2'] = ui_generate_result_table()
+    if user_state is None:
+        ui.navigate.to('/')
+        return
 
-        output_file = download_dir / f"{session_id}.csv"
+    mode = user_state.get('mode', '')
+    output = None
+    output_fields = []
 
-        try:
-            with output_file.open('w') as f:
-                f.write(processed_output)
-        except OSError:
-            print("Output file could not be created")
-            return
+    if mode == 'convert':
+        output_fields = user_state.get('db_checkboxes_selected', [])
+        output_fields = add_if_not_in_list(output_fields, [
+            "CircRNA_ID", "Chr", "Start", "Stop", "Genome"
+        ])
 
-        with ui.row().classes('self-center'):
-            ui.button('Download table',
-                      on_click=lambda e: ui.navigate.to(
-                          '/download/' + session_id + ".csv")) \
-                .classes('self-center')
+        if user_state.get('uploaded_data'):
+            circrna_list = user_state['uploaded_data'].split('\n')
+        else:
+            circrna_list = user_state.get('textfield_value', '').split('\n')
 
-            ui.button('New query',
-                      on_click=lambda e: ui.navigate.to('/')).classes('self-center')
+        db_checkbox_value = user_state.get('db_checkbox_value', 'Coordinates')
+
+        output = util.run_simple_select_query(
+            util, output_fields, circrna_list, db_checkbox_value
+        )
+
+        if (db_checkbox_value not in output_fields and
+                db_checkbox_value != "Coordinates"):
+            output_fields.insert(0, db_checkbox_value)
+
+    elif mode == 'query':
+        output_fields = user_state.get('db_checkboxes_selected', [])
+        output_fields = add_if_not_in_list(output_fields, [
+            "CircRNA_ID", "Chr", "Start", "Stop", "Genome"
+        ])
+
+        constraints = user_state.get('constraints', [])
+        sql_query = ""
+
+        for idx, constraint in enumerate(constraints):
+            if idx > 0 and 'operator1' in constraint:
+                sql_query += " " + constraint['operator1'] + " "
+
+            if constraint['operator2'] == "LIKE":
+                tmp = constraint['query'].replace("*", "", 1)
+                sql_query += constraint['field'] + ' LIKE "%' + tmp + '%" '
+            elif constraint['operator2'] == "is":
+                sql_query += constraint['field'] + ' == "' + constraint['query'] + '" '
+            elif constraint['operator2'] == ">":
+                sql_query += constraint['field'] + ' > "' + constraint['query'] + '" '
+            elif constraint['operator2'] == "<":
+                sql_query += constraint['field'] + ' < "' + constraint['query'] + '" '
+
+        output = util.run_keyword_select_query(util, output_fields, sql_query)
 
     else:
         ui.navigate.to('/')
+        return
 
-        ui.html('<strong>Internal error encountered.</strong>'
-                '<br/><a href=\"/\">Returning to main page</a>'
-                ).style('text-align:center;')
+    # Build result table using pure function
+    separator = user_state.get('select2_value', '\t')
+    empty_char = user_state.get('select3_value', 'NA')
+
+    processed_output, table = build_result_table_for_web(
+        output_fields=output_fields,
+        output=output,
+        mode=mode,
+        separator=separator,
+        empty_char=empty_char,
+    )
+
+    # Write per-session download file
+    output_file = download_dir / f"{session_id}.csv"
+    try:
+        with output_file.open('w') as f:
+            f.write(processed_output)
+    except OSError:
+        ui.html('<strong>Output file could not be created.</strong>')
+        return
+
+    with ui.row().classes('self-center'):
+        ui.button(
+            'Download table',
+            on_click=lambda: ui.navigate.to(f'/download/{session_id}.csv')
+        ).classes('self-center')
+        ui.button(
+            'New query',
+            on_click=lambda: ui.navigate.to('/')
+        ).classes('self-center')
 
 
 @ui.page('/circrna/')
 async def page_application_display_circrna_profile_missing_id():
+    """Handle missing circRNA ID in URL."""
     ui_layout_add_head_html()
     ui_layout_add_header()
 
     with ui.left_drawer(top_corner=True, bottom_corner=False).style(
             'background-color: #d7e3f4;').props('width=390').classes(
         'q-py-none').classes('q-my-none'):
-        # circRNA Name header
         ui.html("URL does not contain a known circRNA ID").style(
             'font-size: 24pt;')
-
         ui.html(
-            '<br/><a href=\"/query/\">Click here to search the circhemy\'s circRNA database</a>')
+            '<br/><a href="/query/">Click here to search '
+            'circhemy\'s circRNA database</a>')
 
-        ui_layout_add_footer_and_right_drawer()
+    ui_layout_add_footer_and_right_drawer()
 
 
 @ui.page('/circrna/{circ_id}', title=util.program_name_long)
 async def page_application_display_circrna_profile(circ_id: str,
                                                    client: Client):
+    """Display a circRNA profile page.
+
+    All state is local — no globals accessed. Each visitor
+    viewing a circRNA profile gets their own isolated UI context."""
+
     ui_layout_add_header()
 
     output = util.run_circrna_query(util, circrna_id=circ_id)
     output_dict = None
 
     if len(output) > 0:
-
         with ui.left_drawer(top_corner=True, bottom_corner=False).style(
                 'background-color: #d7e3f4;').props('width=390').classes(
             'q-py-none').classes('q-my-none'):
-
             ui_layout_generate_logo()
 
             if len(output) > 1:
@@ -1138,19 +1016,18 @@ async def page_application_display_circrna_profile(circ_id: str,
                 tabs.props('align="left"')
 
                 for hit in range(0, len(output)):
-
+                    tab_label = (str(output[hit][17]) + ":" +
+                                 str(output[hit][18]) + "-" +
+                                 str(output[hit][19]) + " [" +
+                                 output[hit][21] + "]")
                     if output[hit][16]:
-                        ui.tab(str(output[hit][17]) + ":" + str(
-                            output[hit][18]) + "-" + str(
-                            output[hit][19]) + " [" + output[hit][21] + "]",
-                               icon='change_circle').style(
-                            "justify-content: initial; background-color: #d7e3f4; ")
+                        ui.tab(tab_label, icon='change_circle').style(
+                            "justify-content: initial; "
+                            "background-color: #d7e3f4;")
                     else:
-                        ui.tab(str(output[hit][17]) + ":" + str(
-                            output[hit][18]) + "-" + str(
-                            output[hit][19]) + " [" + output[hit][21] + "]",
-                               icon='donut_large').style(
-                            "justify-content: initial; background-color: #d7e3f4; ")
+                        ui.tab(tab_label, icon='donut_large').style(
+                            "justify-content: initial; "
+                            "background-color: #d7e3f4;")
 
                 ui.html("&nbsp;").style('font-size: 14pt;')
                 with ui.row():
@@ -1167,36 +1044,30 @@ async def page_application_display_circrna_profile(circ_id: str,
             'q-py-none').classes('q-my-none'):
             ui_layout_generate_logo()
 
-        # circRNA Name header
         ui.html("\"" + circ_id + "\" is an unknown circRNA ID").style(
             'font-size: 24pt;')
         ui.html(
-            '<br/><a href=\"/query/\">Click here to '
-            'search the circhemy\'s circRNA database</a>')
+            '<br/><a href="/query/">Click here to '
+            'search circhemy\'s circRNA database</a>')
 
     # at least one circRNA found
     if len(output) >= 1:
-
-        # this is the name of the first tab, has to be known at time out panel setup
-        first_tab = output[0][17] + ":" + str(output[0][18]) + "-" + str(
-            output[0][19]) + " [" + output[0][21] + "]"
+        first_tab = (output[0][17] + ":" + str(output[0][18]) + "-" +
+                     str(output[0][19]) + " [" + output[0][21] + "]")
 
         with ui.tab_panels(tabs, value=first_tab).style(
                 "background-color: #f8f8f8;").classes('q-ma-none'):
 
-            # for each circRNA hit, e.g. different circRNAs or different genomes
             for hit in range(0, len(output)):
-
                 output_dict = {}
+                tab_label = (output[hit][17] + ":" +
+                             str(output[hit][18]) + "-" +
+                             str(output[hit][19]) + " [" +
+                             output[hit][21] + "]")
 
-                with ui.tab_panel(output[hit][17] + ":" + str(
-                        output[hit][18]) + "-" + str(output[hit][19]) + " [" +
-                                  output[hit][21] + "]"):
-
+                with ui.tab_panel(tab_label):
                     local_columns = util.all_db_columns.copy()
-
                     local_columns.insert(0, "Stable circhemy database ID")
-
                     source_database_print = ""
 
                     for hit_id in range(0, len(local_columns)):
@@ -1205,9 +1076,8 @@ async def page_application_display_circrna_profile(circ_id: str,
                             source_database_print = local_columns[hit_id]
 
                     output_dict['Coordinates'] = 1
-                    output_dict[
-                        'Unspliced length'] = f"{output_dict['Stop'] - output_dict['Start']:,}" + " bp"
-
+                    output_dict['Unspliced length'] = (
+                        f"{output_dict['Stop'] - output_dict['Start']:,} bp")
                     local_columns.append('Coordinates')
                     local_columns.append('Unspliced length')
 
@@ -1217,91 +1087,74 @@ async def page_application_display_circrna_profile(circ_id: str,
                                 with ui.card().style(
                                         'width: 700px;font-size: 12pt;'). \
                                         classes('column justify-between').style(
-                                    "background-color: #d7e3f4;") as card:
+                                    "background-color: #d7e3f4;"):
                                     with ui.row().style('height: 34px;'):
                                         with ui.column():
                                             ui.html(circ_id).style(
                                                 'font-size: 24pt;')
-                                        with ui.column().classes(
-                                                "items-center"):
+                                        with ui.column().classes("items-center"):
                                             ui.label(source_database_print)
 
-                            if output_dict[
-                                'CSNv1'] and source_database_print != 'CSNv1':
+                            if (output_dict['CSNv1'] and
+                                    source_database_print != 'CSNv1'):
                                 with ui.column().style('width: 700px;'):
                                     with ui.card().style(
                                             'width: 700px;font-size: 12pt;'). \
                                             classes('column justify-between'). \
-                                            style(
-                                        "background-color: #d7e3f4;") as card:
-                                        # ui.html(output_dict['CSNv1']).style(
-                                        #     'font-size: 20pt;')
+                                            style("background-color: #d7e3f4;"):
                                         with ui.row().style('height: 30px;').classes('q-pa-none'):
                                             with ui.column():
                                                 ui.html(output_dict['CSNv1']).style(
                                                     'font-size: 20pt;')
-                                            with ui.column().classes(
-                                                    "items-center"):
+                                            with ui.column().classes("items-center"):
                                                 ui.label('CSNv1')
-
 
                             with ui.column().style('width: 700px;'):
                                 with ui.card().style(
                                         'width: 700px;font-size: 12pt;'). \
                                         classes('column justify-between'). \
-                                        style(
-                                    "background-color: #d7e3f4;") as card:
-
+                                        style("background-color: #d7e3f4;"):
                                     for hit_id in range(0, len(local_columns)):
-
-                                        if local_columns[hit_id] not in ["Chr",
-                                                                         "Start",
-                                                                         "Stop",
-                                                                         "Strand",
-                                                                         "Stable circhemy database ID"]:
-
-
+                                        if local_columns[hit_id] not in [
+                                            "Chr", "Start", "Stop", "Strand",
+                                            "Stable circhemy database ID"
+                                        ]:
                                             with ui.row().style('height: 15px;'):
-                                                with ui.column().style(
-                                                        'width: 150px;'):
-                                                    ui.html('<strong>' +
-                                                            local_columns[
-                                                                hit_id] + '</strong>').classes('q-pa-none')
+                                                with ui.column().style('width: 150px;'):
+                                                    ui.html(
+                                                        '<strong>' +
+                                                        local_columns[hit_id] +
+                                                        '</strong>'
+                                                    ).classes('q-pa-none')
                                                 with ui.column():
                                                     ui.html(
                                                         ui_generate_external_link(
-                                                            local_columns[
-                                                                hit_id],
-                                                            output_dict)). \
-                                                        style('align:center').classes('q-pa-none')
+                                                            local_columns[hit_id],
+                                                            output_dict)
+                                                    ).style('align:center').classes('q-pa-none')
 
                         with ui.column().style('width: 350px;'):
                             with ui.card().style(
                                     'width: 350px;font-size: 12pt;'). \
                                     classes('column justify-between'). \
-                                    style(
-                                "background-color: #d7e3f4;") as card2:
-                                output2 = util.get_circrna_history_by_id(util,
-                                                                         circrna_id=
-                                                                         output_dict[
-                                                                             'Stable circhemy database ID'])
-                                with ui.column().style('width: 350px'):
+                                    style("background-color: #d7e3f4;"):
+                                output2 = util.get_circrna_history_by_id(
+                                    util,
+                                    circrna_id=output_dict['Stable circhemy database ID'])
 
+                                with ui.column().style('width: 350px'):
                                     with ui.row():
                                         with ui.column().style('width: 220px;'):
-                                            ui.html("<strong>" + local_columns[
-                                                0] + "<strong>")
-
+                                            ui.html("<strong>" +
+                                                    local_columns[0] +
+                                                    "<strong>")
                                         with ui.column().style('width: 30px;'):
                                             ui.html(str(output[hit][0]))
-
                                     with ui.row():
                                         with ui.column().style('width: 80px;'):
                                             ui.html('<strong>DB Version</strong>')
-
                                         with ui.column().style('width: 80px;'):
                                             ui.html('<strong>Status</strong>')
-
                                         with ui.column().style('width: 80px;'):
                                             ui.html('<strong>Date</strong>')
 
@@ -1309,453 +1162,51 @@ async def page_application_display_circrna_profile(circ_id: str,
                                         time_code = datetime.utcfromtimestamp(
                                             output2[status_id][5]).strftime(
                                             '%m/%d/%Y')
-
                                         with ui.row():
                                             with ui.column().style('width: 80px;'):
                                                 ui.html(str(output2[status_id][4]))
-
                                             with ui.column().style('width: 80px;'):
                                                 ui.html(str(util.db_action_codes[
-                                                                output2[status_id][
-                                                                    1]]))
-
+                                                                output2[status_id][1]]))
                                             with ui.column().style('width: 80px;'):
                                                 ui.html(str(time_code))
 
     ui_layout_add_footer_and_right_drawer()
 
     if output_dict:
-        ui_layout_add_head_html(input_dict=output_dict,
-                                circrna_id=circ_id)
+        ui_layout_add_head_html(input_dict=output_dict, circrna_id=circ_id)
     else:
         ui_layout_add_head_html()
 
     ui.page_title(circ_id + " - " + util.program_name_long)
 
-# content pages
 
+# ========================================================
+# ERROR PAGES
+# ========================================================
 
-@ui.page('/about')
-async def page_about():
-    ui_layout_add_head_html()
-    ui_layout_add_header()
-
-    ui.html("About " + util.program_name).style(
-        'text-align: center; font-size: 26pt;')
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Circular RNAs").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("""
-Circular RNAs (circRNAs) originate through back-splicing events from linear 
-primary transcripts, are resistant to exonucleases, typically not 
-polyadenylated, and have been shown to be highly specific for cell type and 
-developmental stage. 
-
-The prediction of circular RNAs is a multi-stage bioinformatics process starting 
-with raw sequencing data and usually ending with a list of potential circRNA 
-candidates which, depending on tissue and condition may contain hundreds to 
-thousands of potential circRNAs. While there are a number of tools for the 
-prediction process (e.g. circtools developed by our group) a unified naming 
-convention for circRNA is not available.
-
-Multiple databases gathered hundreds of thousands of circRNAs, however, most 
-databases employ their own naming scheme, making it harder and harder to keep 
-track of known circRNAs and their identifiers.
-                """)
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Circhemy").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("""
-We developed circhemy, a modular, Python3-based framework for circRNA ID 
-conversion that unifies several functionalities in a single Python package. 
-Three different routes are implemented within package to access more than 2 
-million circRNA IDs:
-
-Streamlined CLI application for direct access to the prepackaged local SQLite3 
-database User-friendly Web frontend at circhemy.jakobilab.org A public REST API 
-that enables direct access to the most recent ID database from HPC systems using 
-curl or similar tools
-
-Circhemy includes two different modes of action: convert and query. Convert 
-allows the user to convert from one type of circRNA ID to a wide variety of 
-other database identifiers, while query allows users to run direct queries on 
-the circRNA database to extract circRNAs fulfilling a user-defined set of 
-constraints.
-
-Moreover, circhemy is the first circRNA resource that supports and integrates 
-the first version of the **C**ircRNA **S**tandard **N**omenclature (abbreviated 
-**CSNv1** in circhemy) as outlined in **["A guide to naming eukaryotic circular 
-RNAs", Chen et al. 2023.](https://www.nature.com/articles/s41556-022-01066-9)**. 
-Currently, circhemy contains CSNv1 names for nearly 1 million circRNAs of Human, 
-mouse, and rat. 
-            """)
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Contact").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("""
-Circhemy is developed at the **[Jakobi Lab](https://jakobilab.org)**, part of 
-the **[Translational Cardiovascular Research Center 
-(TCRC)](https://phoenixmed.arizona.edu/tcrc)** in the Department of Internal 
-Medicine at **[The University of Arizona College of Medicine
- – Phoenix](https://phoenixmed.arizona.edu/)**.
-
-Contact: **<circhemy@jakobilab.org>**
-    """)
-
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4;').props('width=390').classes(
-        'q-py-none').classes('q-my-none'):
-        ui_layout_generate_logo()
-
-    ui_layout_add_footer_and_right_drawer()
-
-
-@ui.page('/rest')
-async def page_rest():
-    ui_layout_add_head_html()
-    ui_layout_add_header()
-
-    ui.html("Representational State Transfer (REST) Interface").style(
-        'text-align: center; font-size: 26pt;')
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Introduction").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("""
-Representational State Transfer, or REST for short, allows users and software 
-developers to easily access circhemy from within their own tools or pipelines. 
-Circhemy's REST API uses JSON for input queries and returning output, making it 
-easy to format queries from every programming language or even by hand. The REST
- API it publicly available and uses a fixed set of keywords to perform 
-conversions or queries. Two examples for the two different modes of action are 
-shown below.
-    """)
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Quick Start").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("**Convert module**")
-            ui.markdown("The convert module is able to convert from a range of "
-                        "input circRNA ID into different one or more database"
-                        "identifiers.")
-            ui.markdown('''
-                ```Bash
-                curl -X 'POST' 'https://circhemy.jakobilab.org/api/convert'
-                  -H 'accept: application/json'
-                  -H 'Content-Type: application/json'
-                  -d '{
-                      "input": "CircAtlas2",
-                      "output": ["Circpedia2","CircAtlas2"],
-                      "query": ["hsa-MYH9_0004","hsa-MYH9_0004"]
-                      }'
-                ```
-''')
-            ui.markdown("""
-
-Output is returned as JSON-formatted string which can directly be used for AG 
-Grid tables for any other postprocessing:
-
-""")
-
-            ui.markdown("""
-                ```JSON
-                {
-                  "columnDefs": [
-                    {
-                      "headerName": "circBase",
-                      "field": "circBase"
-                    },
-                    {
-                      "headerName": "Circpedia2",
-                      "field": "Circpedia2"
-                    }
-                  ],
-                  "rowData": [
-                    {
-                      "circBase": "hsa_circ_0004470",
-                      "Circpedia2": "HSA_CIRCpedia_36582"
-                    },
-                    {
-                      "circBase": "hsa_circ_0004470",
-                      "Circpedia2": "HSA_CIRCpedia_36582"
-                    }
-                  ]
-                }
-                ```
-""")
-
-        with ui.card_section():
-            ui.markdown("**Query module**")
-            ui.markdown("The query module is able to retrieve circRNA IDs from "
-                        "the internal database that fulfil a set of user-defined"
-                        " constraints.")
-            ui.markdown("""
-Example: Retrieve all circRNAs with a CircAtlas2 ID containing *atf* or *xbp1*, 
-return the IDs in circBase and circAtlas2 format:
-                ```Bash
-                curl -X 'POST'
-                  'https://circhemy.jakobilab.org/api/query'
-                  -H 'accept: application/json'
-                  -H 'Content-Type: application/json'
-                  -d '{{
-                  "input": [
-                    {
-                      "query": "pdia4",
-                      "field": "CircAtlas2",
-                      "operator1": "AND",
-                      "operator2": "LIKE"
-                    },
-                    {
-                      "query": "rattus_norvegicus",
-                      "field": "species",
-                      "operator1": "AND",
-                      "operator2": "IS"
-                    }
-                  ],
-                  "output": [
-                    "circBase"
-                  ]
-                }}'
-                ```
-            """)
-            ui.markdown("""
-
-Output is returned as JSON-formatted string which can directly be used for AG 
-Grid tables for any other postprocessing:
-
-            """)
-
-            ui.markdown("""
-                ```JSON
-                {
-                  "columnDefs": [
-                    {
-                      "headerName": "circBase",
-                      "field": "circBase"
-                    },
-                    {
-                      "headerName": "CircAtlas2",
-                      "field": "CircAtlas2"
-                    }
-                  ],
-                  "rowData": [
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA_0001"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA-AS1_0001"
-                    },
-                    {
-                      "circBase": "hsa_circ_0009871",
-                      "CircAtlas2": "hsa-NPPA-AS1_0004"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA-AS1_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA-AS1_0003"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA_0001"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA-AS1_0001"
-                    },
-                    {
-                      "circBase": "hsa_circ_0009871",
-                      "CircAtlas2": "hsa-NPPA-AS1_0004"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA-AS1_0002"
-                    },
-                    {
-                      "circBase": "",
-                      "CircAtlas2": "hsa-NPPA-AS1_0003"
-                    }
-                  ]
-                }
-                ```
-            """)
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Documentation").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("The full documentation is available on "
-                        "***[GitHub](https://github.com/jakobilab/circhemy)***.")
-
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4;').props('width=390').classes(
-        'q-py-none').classes('q-my-none'):
-        ui_layout_generate_logo()
-
-    ui_layout_add_footer_and_right_drawer()
-
-
-@ui.page('/cli')
-async def page_cli():
-    ui_layout_add_head_html()
-    ui_layout_add_header()
-
-    ui.html("Command Line Interface (CLI)").style(
-        'text-align: center; font-size: 26pt;')
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Setup").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("""
-The circhemy package is written in Python3 (>=3.8) and consists of two 
-core modules, namely convert and query. The command line version requires 
-only one external dependency, ``sqlite3``, for access to the internal SQLite3
-database with circRNA ID data
-
-Installation is managed through ``pip3 install circhemy`` or ``pip install`` 
-when installed from the cloned GitHub repository. No sudo access is
-required if the installation is executed with ``--user`` which will install the
-package in a user-writeable folder. The binaries should be installed
-to ``/home/$user/.local/bin/`` in case of Debian-based systems.
-
-circhemy was developed and tested on Debian Buster, but should run with
-any other distribution.
-
-The installation requires running python on the command line:
-
-```Bash
-    git clone https://github.com/jakobilab/circhemy.git
-    cd circhemy
-    pip3 install .
-```
-""")
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Quick Start").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("**Convert module**")
-            ui.markdown("The convert module is able to convert from a range of "
-                        "input circRNA ID into different one or more database"
-                        "identifiers.")
-            ui.markdown("""
-Example: Convert a list of Circpedia2 IDs read via STDIN from file `input.csv` 
-into Circpedia2 IDs, but also output CircAtlas2 IDs, while writing the output to
-`/tmp/output.csv`:
-
-```Bash
-cat input.csv | circhemy convert  -q STDIN -i CircAtlas2 -o Circpedia2 CircAtlas2 -O /tmp/output.csv
-```
-""")
-
-        with ui.card_section():
-            ui.markdown("**Query module**")
-            ui.markdown("The query module is able to retrieve circRNA IDs from "
-                        "the internal database that fulfil a set of user-defined"
-                        " constraints.")
-            ui.markdown("""
-Example: Retrieve a list of circBase and CircAtlas2 circRNA IDs that are located
-on chromosome 3 of the species rattus norvegicus; only print out circRNAs from 
-the rn6 genome build.
-
-```Bash
-circhemy query -o circBase CircAtlas2 -C chr3 -s rattus_norvegicus -g rn6
-```
-""")
-
-    with ui.card().style('width: 100%;') as card:
-        ui.html("Documentation").style('text-align: center; font-size: 16pt;')
-        with ui.card_section():
-            ui.markdown("The full documentation is available on "
-                        "***[GitHub](https://)***.")
-
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4;').props('width=390').classes(
-        'q-py-none').classes('q-my-none'):
-        ui_layout_generate_logo()
-
-    ui_layout_add_footer_and_right_drawer()
-
-
-@ui.page('/news')
-async def page_news():
-    ui_layout_add_head_html()
-    ui_layout_add_header()
-
-    ui.html(
-        "<img style='text-align: center' src=\"static/news_small.png\">").style(
-        'text-align: center; padding:10px;')
-
-    # get feed
-    d = feedparser.parse(util.news_url)
-
-    max_posts = 20
-
-    news_count = 1
-
-    for post in d.entries:
-        date_obj = parse(post.updated)
-
-        with ui.card().style('width: 100%;') as card:
-            ui.html("<strong>" + date_obj.astimezone(tz.tzlocal()).strftime(
-                "%d %B, %Y") + "</strong>")
-            ui.html(post.title).style(
-                'font-size: 1.25rem; line-height: 1.75rem;')
-            with ui.card_section():
-                ui.html(post.description)
-
-        news_count += 1
-        if news_count > max_posts:
-            break
-
-    with ui.left_drawer(top_corner=True, bottom_corner=False).style(
-            'background-color: #d7e3f4;').props('width=390').classes(
-        'q-py-none').classes('q-my-none'):
-
-        ui_layout_generate_logo()
-
-    ui_layout_add_footer_and_right_drawer()
-
-
-# error pages for error 404 and 500
 @app.exception_handler(404)
 async def exception_handler_404(request: Request,
                                 exception: Exception) -> Response:
     with Client(ui.page(''), request=request) as client:
-        with ui.column().style(
-                'width: 100%;align-items: center; gap: 0'):
+        with ui.column().style('width: 100%;align-items: center; gap: 0'):
             ui.label('Error 404').style(
                 'font-size: 2.75rem; line-height: 1;')
             ui.html(
-                "<strong>Page not found: </strong>" + str(request.url.path)). \
-                style(
+                "<strong>Page not found: </strong>" +
+                str(request.url.path)).style(
                 'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
-            ui.html(str(Request)).style(
-                'font-size: 1.25rem; line-height: 1.75rem;')
             ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style(
                 'text-align: center; padding:10px;')
             ui.label(
-                'Please contact the server administrator at ' + util.support_email + ' for additional support.'). \
-                style(
+                'Please contact the server administrator at ' +
+                util.support_email + ' for additional support.').style(
                 'font-size: 1.25rem; line-height: 1.75rem;')
-            ui.link('Click here to report an issue on GitHub.',
-                    util.support_web + "?title=circhemy 404 error" +
-                    "&body=URL: " + str(
-                        request.url) + "%0A%0APlease describe how the error occurred"). \
-                style(
+            ui.link(
+                'Click here to report an issue on GitHub.',
+                util.support_web + "?title=circhemy 404 error" +
+                "&body=URL: " + str(request.url) +
+                "%0A%0APlease describe how the error occurred").style(
                 'font-size: 1.25rem; line-height: 1.75rem;')
     return client.build_response(request, 404)
 
@@ -1764,36 +1215,32 @@ async def exception_handler_404(request: Request,
 async def exception_handler_500(request: Request,
                                 exception: Exception) -> Response:
     with Client(ui.page(''), request=request) as client:
-        with ui.column().style(
-                'width: 100%;align-items: center; gap: 0'):
+        with ui.column().style('width: 100%;align-items: center; gap: 0'):
             ui.label('Internal server error').style(
                 'font-size: 2.75rem; line-height: 1;')
-            ui.html(
-                "<strong>Exception:</strong>"). \
-                style(
+            ui.html("<strong>Exception:</strong>").style(
                 'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
             ui.html(str(exception)).style(
                 'font-size: 1.25rem; line-height: 1.75rem;')
             ui.html("<a href=\"/\"><img src=\"/static/error.png\"></a>").style(
                 'text-align: center; padding:10px;')
             ui.label(
-                'Please contact the server administrator at '
-                + util.support_email + ' for additional support.'). \
-                style(
+                'Please contact the server administrator at ' +
+                util.support_email + ' for additional support.').style(
                 'font-size: 1.25rem; line-height: 1.75rem;')
-            ui.link('Click here to report an issue on GitHub.',
-                    util.support_web + "?title=circhemy exception: " +
-                    str(exception) + "&body=URL: " + str(
-                        request.url) + "%0A%0APlease describe how the error occurred"). \
-                style(
+            ui.link(
+                'Click here to report an issue on GitHub.',
+                util.support_web + "?title=circhemy exception: " +
+                str(exception) + "&body=URL: " + str(request.url) +
+                "%0A%0APlease describe how the error occurred").style(
                 'font-size: 1.25rem; line-height: 1.75rem; padding: 1.25rem 0')
     return client.build_response(request, 500)
 
 
-# Below: REST API data definitions and endpoint functions for
-# convert and query endpoint
+# ========================================================
+# REST API — Stateless by design, already multi-user safe
+# ========================================================
 
-# Data class for REST API calls from the convert module
 class ConvertModel(BaseModel):
     input: str
     output: List[str]
@@ -1804,21 +1251,17 @@ class ConvertModel(BaseModel):
     def circrna_id_pattern_check(cls, v):
         if len(v) == 0:
             raise ValueError('No CircRNA IDs for conversion provided.')
-
         for item in v:
             if not check_circrna_input_regex(item):
                 raise ValueError('CircRNA IDs contains illegal characters.')
             if item == "":
                 raise ValueError('No CircRNA IDs for conversion provided.')
-
         return v
 
     @field_validator('input')
     @classmethod
     def database_name_check_input(cls, v):
-
         fields_allowed = list(util.external_db_urls.keys())
-
         if v not in fields_allowed:
             raise ValueError("Unsupported input field provided."
                              " Supported fields are: "
@@ -1829,20 +1272,16 @@ class ConvertModel(BaseModel):
     @field_validator('output')
     @classmethod
     def database_name_check_output(cls, v):
-
         fields_allowed = list(util.external_db_urls.keys())
-
         for field in v:
             if field not in fields_allowed:
                 raise ValueError("Unsupported output field provided."
                                  " Supported fields are: "
                                  + ', '.join(fields_allowed) +
                                  ". Field names are case-sensitive.")
-
         return v
 
 
-# Data subclass for REST API calls from the query module
 class ConstraintModel(BaseModel):
     query: str
     field: str
@@ -1859,9 +1298,7 @@ class ConstraintModel(BaseModel):
     @field_validator('field')
     @classmethod
     def field_name_check(cls, v):
-
         fields_allowed = list(util.external_db_urls.keys())
-
         if v not in fields_allowed:
             raise ValueError("Unsupported input field provided."
                              " Supported fields are: "
@@ -1872,9 +1309,7 @@ class ConstraintModel(BaseModel):
     @field_validator('operator1')
     @classmethod
     def operator1_check(cls, v):
-
         fields_allowed = ["AND", "OR", "AND NOT"]
-
         if v not in fields_allowed:
             raise ValueError("Unsupported operator1 provided."
                              " Supported fields are: "
@@ -1885,18 +1320,15 @@ class ConstraintModel(BaseModel):
     @field_validator('operator2')
     @classmethod
     def operator2_check(cls, v):
-
         fields_allowed = ["IS", "LIKE", ">", "<"]
-
         if v not in fields_allowed:
             raise ValueError("Unsupported operator2 provided."
                              " Supported fields are: "
-                             + ', '.join(fields_allowed)
-                             + ". Field names are case-sensitive.")
+                             + ', '.join(fields_allowed) +
+                             ". Field names are case-sensitive.")
         return v
 
 
-# Data class for REST API calls from the query module
 class QueryModel(BaseModel):
     input: List[ConstraintModel]
     output: List[str]
@@ -1905,24 +1337,24 @@ class QueryModel(BaseModel):
     @classmethod
     def database_name_check_output(cls, v):
         fields_allowed = list(util.external_db_urls.keys())
-
         for field in v:
             if field not in fields_allowed:
                 raise ValueError("Unsupported output field provided."
                                  " Supported fields are: "
-                                 + ', '.join(fields_allowed)
-                                 + ". Field names are case-sensitive.")
-
+                                 + ', '.join(fields_allowed) +
+                                 ". Field names are case-sensitive.")
         return v
 
 
 @app.post("/api/convert")
 async def process_api_convert_call(data: ConvertModel):
-    data, table = ui_generate_result_table(data.input, data.output, data.query)
+    """REST API convert endpoint — stateless, no globals."""
+    _, table = build_result_table_for_api(data.input, data.output, data.query)
     return table
 
 
 @app.post("/api/query")
 async def process_api_query_call(data: QueryModel):
-    out, table = ui_generate_result_table(data.input, data.output)
+    """REST API query endpoint — stateless, no globals."""
+    _, table = build_result_table_for_api(data.input, data.output)
     return table
